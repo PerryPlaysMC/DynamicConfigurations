@@ -10,11 +10,10 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 /**
- * Copy Right ©
- * This code is private
- * Owner: PerryPlaysMC *
- * Any attempts to use these program(s) may result in a penalty of up to $5,000 USD
+ * Creator: PerryPlaysMC
+ * Created: 10/2021
  **/
 
 public class DynamicConfigManager {
