@@ -31,8 +31,8 @@
 </repositories>
 
 <dependency>
-    <groupId>com.github.PerryPlaysMC</groupId>
-    <artifactId>DynamicConfigurations</artifactId>
-    <version>1.0-SNAPSHOT</version>
+   <groupId>com.github.PerryPlaysMC</groupId>
+   <artifactId>DynamicConfigurations</artifactId>
+   <version>1.1-SNAPSHOT</version>
 </dependency>
 ```
