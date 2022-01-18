@@ -2,9 +2,12 @@ package config;
 
 import config.json.DynamicJsonConfiguration;
 import config.yaml.DynamicYamlConfiguration;
+import org.bukkit.Bukkit;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -30,16 +33,23 @@ public class DynamicConfigManager {
 
    public static IDynamicConfiguration getConfiguration(String name) {
       for(IDynamicConfiguration configuration : getConfigurations())
-         if(configuration.getName().equals(name) || configuration.getFile().getName().equals(name)) return configuration;
+         if(configuration.getName().equals(name) || configuration.getFile().getName().equals(name)
+            ||(configuration.getDirectory().getName() + "/" +configuration.getName()).equals(name)
+            || (configuration.getDirectory().getName() + "/" +configuration.getFile().getName()).equals(name)) return configuration;
       return null;
    }
 
    public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, String name) {
-      for(IDynamicConfiguration configuration : getConfigurations())
-         if(configuration.getName().equals(name) || configuration.getFile().getName().equals(name)) return configuration.regenerate();
-      String directory = name.contains("/") ? name.substring(0, name.lastIndexOf('/')) : null;
-      if(name.endsWith(".json"))return new DynamicJsonConfiguration(plugin, directory, name.substring(name.lastIndexOf('/')));
-      return new DynamicYamlConfiguration(plugin, directory, name.substring(name.lastIndexOf('/')));
+      return createConfiguration(plugin, null, name);
+   }
+
+   public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, String directory, String name) {
+      IDynamicConfiguration config = getConfiguration(name);
+      if(config == null) config = getConfiguration(directory + "/" + name);
+      if(config == null)
+         if(name.endsWith(".json")) config = new DynamicJsonConfiguration(plugin, directory, name);
+         else config = new DynamicYamlConfiguration(plugin, directory, name);
+      return config;
    }
 
    public static List<String> readInputStream(InputStream inputStream) {
@@ -47,9 +57,7 @@ public class DynamicConfigManager {
          if(inputStream == null) return new ArrayList<>();
          Scanner scanner = new Scanner(inputStream);
          String lines = "";
-         while(scanner.hasNext()) {
-            lines+="\n"+scanner.nextLine();
-         }
+         while(scanner.hasNext()) lines+="\n"+scanner.nextLine();
          return Arrays.asList(lines.substring(1).split("\n"));
       } catch (Exception e) {
          e.printStackTrace();
@@ -80,8 +88,7 @@ public class DynamicConfigManager {
    }
 
    public static int getComments(File file) {
-      if(!file.exists())
-         return 0;
+      if(file == null || !file.exists()) return 0;
       try {
          int comments = 0;
          String currentLine;
@@ -172,9 +179,7 @@ public class DynamicConfigManager {
    public static void writeFile(UUID id, InputStream is, File toPrint) {
       try {
          FileOutputStream outputStream = new FileOutputStream(toPrint);
-         String config = String.join("\n",readInputStream(getContent(id,is)));
-         System.out.println(config);
-         outputStream.write(config.getBytes());
+         outputStream.write(String.join("\n",readInputStream(getContent(id,is))).getBytes());
          outputStream.close();
       } catch (IOException e) {
          e.printStackTrace();
@@ -182,9 +187,7 @@ public class DynamicConfigManager {
    }
    public static void writeFile(List<String> out, File toPrint) {
       try {
-         System.out.println("out: " + (out == null));
          if(out==null)return;
-         System.out.println(String.join("\n",out));
          FileOutputStream outputStream = new FileOutputStream(toPrint);
          outputStream.write(String.join("\n",out).getBytes());
          outputStream.close();

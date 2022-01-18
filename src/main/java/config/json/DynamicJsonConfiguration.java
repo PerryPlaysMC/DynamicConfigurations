@@ -96,7 +96,6 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
 
    @Override
    public IDynamicConfiguration save() {
-      System.out.println("Saving json config");
       DynamicConfigManager.writeFile(Collections.singletonList(GSON.toJson(data)), file);
       return this;
    }
@@ -201,7 +200,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public IDynamicConfigurationSection createSection(String path) {
       IDynamicConfigurationSection sec = getSection(path);
-      if(sec == null) sec = new DynamicJsonConfigurationSection(this,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new HashMap<>());
+      if(sec == null) set(path,sec = new DynamicJsonConfigurationSection(this,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new HashMap<>()));
       return sec;
    }
 

@@ -277,7 +277,8 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    @Override
    public IDynamicConfigurationSection createSection(String path) {
       IDynamicConfigurationSection sec = getSection(path);
-      if(sec == null) sec = new DynamicYamlConfigurationSectionImpl(this,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new HashMap<>());
+      if(sec == null)
+         set(path,sec = new DynamicYamlConfigurationSectionImpl(this,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new HashMap<>()));
       return sec;
    }
 

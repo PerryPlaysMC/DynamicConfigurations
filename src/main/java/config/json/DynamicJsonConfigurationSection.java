@@ -135,7 +135,7 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
    @Override
    public IDynamicConfigurationSection createSection(String path) {
       IDynamicConfigurationSection sec = getSection(path);
-      if(sec == null) sec = new DynamicJsonConfigurationSection(configuration,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new HashMap<>());
+      if(sec == null) set(path,sec = new DynamicJsonConfigurationSection(configuration,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new HashMap<>()));
       return sec;
    }
 
