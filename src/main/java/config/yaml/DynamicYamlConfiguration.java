@@ -49,9 +49,13 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    public DynamicYamlConfiguration(JavaPlugin plugin, File directory, String name) {
       Validate.notNull(plugin);
       this.plugin = plugin;
-      if(directory == null) this.directory = new File("plugins/" + plugin.getName());
-      else this.directory = directory;
-      file = new File(directory, name.endsWith(".yml") ? name : name + ".yml");
+      if(directory != null)
+         this.directory = directory;
+      else if(name.contains("/"))
+         this.directory = new File(name.substring(0,name.lastIndexOf('/')));
+      else this.directory = new File("plugins/" + plugin.getName());
+      if(name.contains("/")) name = name.substring(name.lastIndexOf('/')+1);
+      this.file = new File(this.directory, name.endsWith(".yml") ? name : name + ".yml");
       if(!this.file.exists()) regenerate();
       this.stream = null;
       reload();

@@ -35,16 +35,20 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    public DynamicJsonConfiguration(JavaPlugin plugin, File directory, String name) {
       Validate.notNull(plugin);
       this.plugin = plugin;
-      if(directory == null) this.directory = new File("plugins/" + plugin.getName());
-      else this.directory = directory;
-      file = new File(directory, name.endsWith(".json") ? name : name + ".json");
+      if(directory != null)
+         this.directory = directory;
+      else if(name.contains("/"))
+         this.directory = new File(name.substring(0,name.lastIndexOf('/')));
+      else this.directory = new File("plugins/" + plugin.getName());
+      if(name.contains("/")) name = name.substring(name.lastIndexOf('/')+1);
+      this.file = new File(this.directory, (name.endsWith(".json") ? name : name + ".json"));
       if(!this.file.exists()) regenerate();
       this.stream = null;
       reload();
       adapter.gson(GSON);
    }
    public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
-      this(plugin, directory == null ? null : new File(directory), name);
+      this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
    }
    public DynamicJsonConfiguration(JavaPlugin plugin, Supplier<InputStream> stream) {
       Validate.notNull(plugin);

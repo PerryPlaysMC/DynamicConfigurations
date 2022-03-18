@@ -114,10 +114,10 @@ public class DynamicConfigurationManager {
    }
 
    public static IDynamicConfiguration createGhostConfiguration(JavaPlugin plugin, String name) {
-         String extension = name.substring(name.lastIndexOf('.'));
-         if(CONFIG_EXTENSION_REGISTER.containsKey(extension))
-            return CONFIG_EXTENSION_REGISTER.get(extension).create(plugin, (Supplier)() -> plugin.getResource(name), null);
-         else return new DynamicYamlConfiguration(plugin, () -> plugin.getResource(name));
+      String extension = name.substring(name.lastIndexOf('.'));
+      if(CONFIG_EXTENSION_REGISTER.containsKey(extension))
+         return CONFIG_EXTENSION_REGISTER.get(extension).create(plugin, (Supplier)() -> plugin.getResource(name), null);
+      else return new DynamicYamlConfiguration(plugin, () -> plugin.getResource(name));
    }
 
    public static boolean matches(IDynamicConfiguration configuration, IDynamicConfiguration ghostConfiguration) {
@@ -191,7 +191,8 @@ public class DynamicConfigurationManager {
             }
          }
          if(currentLine.isEmpty() || currentLine.replaceAll("\\s", "").startsWith("#")) {
-            config.append("\n ");
+            if(!currentLine.replaceAll("\\s", "").startsWith("#"))
+               config.append("\n ");
             continue;
          }
          followPath = createPath(followPath, currentLine, indent, lastIndent);
