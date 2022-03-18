@@ -1,19 +1,17 @@
 package config.json;
 
 import com.google.gson.*;
-import com.google.gson.stream.JsonWriter;
-import config.DynamicConfigManager;
+import config.DynamicConfigurationDirectory;
+import config.DynamicConfigurationManager;
 import config.IDynamicConfiguration;
 import config.IDynamicConfigurationSection;
-import config.yaml.DynamicYamlConfigurationSectionImpl;
 import org.apache.commons.lang.Validate;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
-import java.lang.reflect.ParameterizedType;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -22,55 +20,99 @@ import java.util.stream.Collectors;
  **/
 
 public class DynamicJsonConfiguration implements IDynamicConfiguration {
-   private Map<String, Object> data = new HashMap<>();
+   private Map<String, Object> data = new LinkedHashMap<>();
 
    private final File file;
-   private final File directory;
+   private File directory;
    private final JavaPlugin plugin;
    private boolean autoSave = false;
+   private final Supplier<InputStream> stream;
+   private DynamicConfigurationDirectory configurationDirectory = null;
 
    private final DynamicJsonAdapter adapter = new DynamicJsonAdapter(this);
    private final Gson GSON = new GsonBuilder().setPrettyPrinting().registerTypeAdapter(DynamicJsonConfigurationSection.class, adapter).create();
 
-   public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
+   public DynamicJsonConfiguration(JavaPlugin plugin, File directory, String name) {
       Validate.notNull(plugin);
       this.plugin = plugin;
-      if(directory == null || directory.isEmpty()) this.directory = new File("plugins/" + plugin.getName());
-      else this.directory = new File(directory);
+      if(directory == null) this.directory = new File("plugins/" + plugin.getName());
+      else this.directory = directory;
       file = new File(directory, name.endsWith(".json") ? name : name + ".json");
       if(!this.file.exists()) regenerate();
+      this.stream = null;
       reload();
-      adapter.setGson(GSON);
+      adapter.gson(GSON);
+   }
+   public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
+      this(plugin, directory == null ? null : new File(directory), name);
+   }
+   public DynamicJsonConfiguration(JavaPlugin plugin, Supplier<InputStream> stream) {
+      Validate.notNull(plugin);
+      this.plugin = plugin;
+      this.directory = null;
+      this.file = null;
+      this.stream = stream;
+      reload();
+   }
+   public DynamicJsonConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
+      this(plugin,directory.directory().getPath(),name);
+      this.configurationDirectory = directory;
    }
 
    @Override
-   public String getId() {
+   public DynamicConfigurationDirectory configurationDirectory() {
+      return configurationDirectory;
+   }
+
+   @Override
+   public IDynamicConfiguration configurationDirectory(DynamicConfigurationDirectory directory) {
+      if(!directory.directory().getPath().equals(directory().getPath())) {
+         this.directory = directory.directory();
+         file.renameTo(new File(this.directory, file.getName()));
+         reload();
+      }
+      this.configurationDirectory = directory;
+      return this;
+   }
+
+   @Override
+   public String id() {
       return "";
    }
 
    @Override
-   public Map<String, Object> getData() {
+   public Map<String, Object> data() {
       return data;
    }
 
    @Override
-   public File getFile() {
+   public File file() {
       return file;
    }
 
    @Override
-   public File getDirectory() {
+   public File directory() {
       return directory;
    }
 
    @Override
-   public String getName() {
+   public String name() {
       return file.getName();
    }
 
    @Override
-   public boolean isAutoSave() {
+   public boolean autoSave() {
       return autoSave;
+   }
+
+   @Override
+   public Map<String, String> comments() {
+      throw new UnsupportedOperationException("Comments are not supported in json files");
+   }
+
+   @Override
+   public Map<String, String> inlineComments() {
+      throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
    @Override
@@ -81,13 +123,16 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
 
    @Override
    public IDynamicConfiguration regenerate() {
+      if(stream != null) {
+         return reload();
+      }
       if(this.file.exists()) this.file.delete();
-      InputStream rsc = plugin.getResource(getName());
-      if(rsc == null) rsc = plugin.getResource((directory!=null?(directory.getPath().endsWith("/")||getName().startsWith("/") ? directory.getPath() :directory.getPath()+"/"):"")+getName());
+      InputStream rsc = plugin.getResource(name());
+      if(rsc == null) rsc = plugin.getResource((directory!=null?(directory.getPath().endsWith("/")|| name().startsWith("/") ? directory.getPath() :directory.getPath()+"/"):"")+ name());
       if(directory!=null&&!directory.isDirectory())directory.mkdirs();
       try {
          if(rsc == null) file.createNewFile();
-         else DynamicConfigManager.writeFile(rsc,file);
+         else DynamicConfigurationManager.writeFile(rsc,file);
       } catch (IOException e) {
          e.printStackTrace();
       }
@@ -96,22 +141,25 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
 
    @Override
    public IDynamicConfiguration save() {
-      DynamicConfigManager.writeFile(Collections.singletonList(GSON.toJson(data)), file);
+      if(stream != null) return this;
+      DynamicConfigurationManager.writeFile(Collections.singletonList(GSON.toJson(data)), file);
       return this;
    }
    @Override
    public IDynamicConfiguration reload() {
       try {
-         data = (Map<String, Object>) GSON.fromJson(new FileReader(file), Map.class);
+         if(stream != null)
+            data = (Map<String, Object>) GSON.fromJson(new InputStreamReader(stream.get()), Map.class);
+         else data = (Map<String, Object>) GSON.fromJson(new FileReader(file), Map.class);
       } catch (FileNotFoundException e) {
          e.printStackTrace();
       }
-      if(data == null) data = new HashMap<>();
+      if(data == null) data = new LinkedHashMap<>();
       return this;
    }
 
    private HashSet<String> keys(IDynamicConfigurationSection map, HashSet<String> keys) {
-      for(String s : map.getData().keySet()) {
+      for(String s : map.data().keySet()) {
          keys.add(s);
          if(map.get(s) instanceof IDynamicConfigurationSection) keys.addAll(((IDynamicConfigurationSection) map.get(s))
             .getKeys(true).stream().map(str->s+"."+str).collect(Collectors.toList()));
@@ -147,7 +195,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
       if(paths.length == 1) {
          if(value == null) data.remove(paths[0]);
          else data.put(paths[0],value);
-         return isAutoSave() ? save() : this;
+         return autoSave() ? save() : this;
       }
       for(int i = 0; i < paths.length; i++) {
          String lastKey = paths[i];
@@ -155,11 +203,11 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
             start.set(lastKey, value);
          }else {
             if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
-               start.set(lastKey,new DynamicJsonConfigurationSection(this,lastKey,new HashMap<>()));
+               start.set(lastKey,new DynamicJsonConfigurationSection(this,lastKey,new LinkedHashMap<>()));
             start = (IDynamicConfigurationSection) start.get(lastKey);
          }
       }
-      return isAutoSave() ? save() : this;
+      return autoSave() ? save() : this;
    }
 
    @Override
@@ -168,7 +216,17 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    }
 
    @Override
+   public IDynamicConfigurationSection setInline(String path, Object value, String comment) {
+      throw new UnsupportedOperationException("Comments are not supported in json files");
+   }
+
+   @Override
    public IDynamicConfigurationSection comment(String... comment) {
+      throw new UnsupportedOperationException("Comments are not supported in json files");
+   }
+
+   @Override
+   public IDynamicConfigurationSection inlineComment(String... comment) {
       throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
@@ -200,8 +258,13 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public IDynamicConfigurationSection createSection(String path) {
       IDynamicConfigurationSection sec = getSection(path);
-      if(sec == null) set(path,sec = new DynamicJsonConfigurationSection(this,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new HashMap<>()));
+      if(sec == null) set(path,sec = new DynamicJsonConfigurationSection(this,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new LinkedHashMap<>()));
       return sec;
+   }
+
+   @Override
+   public IDynamicConfigurationSection createSection(String path, String comment) {
+      throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
    @Override
@@ -323,8 +386,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<String> getListString(String path, List<String> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("String"))return defaultValue;
-      return (List<String>)value;
+      return value == null ? defaultValue : (List<String>) value;
    }
 
    @Override
@@ -335,8 +397,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<Double> getListDouble(String path, List<Double> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Double"))return defaultValue;
-      return (List<Double>)value;
+      return value == null ? defaultValue : (List<Double>) value;
    }
 
    @Override
@@ -347,8 +408,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<Integer> getListInteger(String path, List<Integer> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Integer"))return defaultValue;
-      return (List<Integer>)value;
+      return value == null ? defaultValue : (List<Integer>) value;
    }
 
    @Override
@@ -359,8 +419,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<Float> getListFloat(String path, List<Float> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Float"))return defaultValue;
-      return (List<Float>)value;
+      return value == null ? defaultValue : (List<Float>) value;
    }
 
    @Override
@@ -371,8 +430,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<Byte> getListByte(String path, List<Byte> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Byte"))return defaultValue;
-      return (List<Byte>)value;
+      return value == null ? defaultValue : (List<Byte>) value;
    }
 
    @Override
@@ -383,8 +441,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<Boolean> getListBoolean(String path, List<Boolean> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Boolean"))return defaultValue;
-      return (List<Boolean>)value;
+      return value == null ? defaultValue : (List<Boolean>) value;
    }
 
    @Override

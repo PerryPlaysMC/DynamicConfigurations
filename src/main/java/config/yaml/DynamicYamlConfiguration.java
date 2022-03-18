@@ -1,26 +1,24 @@
 package config.yaml;
 
-import config.DynamicConfigManager;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import config.DynamicConfigurationDirectory;
+import config.DynamicConfigurationManager;
 import config.IDynamicConfiguration;
 import config.IDynamicConfigurationSection;
+import config.json.DynamicJsonAdapter;
 import config.json.DynamicJsonConfigurationSection;
 import org.apache.commons.lang.Validate;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.configuration.file.YamlConfigurationOptions;
-import org.bukkit.configuration.file.YamlConstructor;
-import org.bukkit.configuration.file.YamlRepresenter;
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.prefs.Preferences;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -30,56 +28,103 @@ import java.util.stream.Collectors;
 
 public class DynamicYamlConfiguration implements IDynamicConfiguration {
 
-   private Map<String, Object> data = new HashMap<>();
+   private Map<String, Object> data = new LinkedHashMap<>();
 
    private final File file;
-   private final File directory;
+   private File directory;
    private final JavaPlugin plugin;
-   private YamlConfiguration yaml;
-   protected final UUID id = UUID.randomUUID();
+   private final Supplier<InputStream> stream;
+   protected final HashMap<String,String> COMMENTS = new HashMap<>();
+   protected final HashMap<String,String> INLINE_COMMENTS = new HashMap<>();
    private boolean autoSave = false;
-   int comments = 0;
+   private YamlConfiguration yaml;
+   private String lastPath = "";
 
-   public DynamicYamlConfiguration(JavaPlugin plugin, String directory, String name) {
+   private DynamicConfigurationDirectory configurationDirectory = null;
+
+   public DynamicYamlConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
+      this(plugin,directory.directory(),name);
+      this.configurationDirectory = directory;
+   }
+   public DynamicYamlConfiguration(JavaPlugin plugin, File directory, String name) {
       Validate.notNull(plugin);
       this.plugin = plugin;
-      if(directory == null || directory.isEmpty()) this.directory = new File("plugins/" + plugin.getName());
-      else this.directory = new File(directory);
+      if(directory == null) this.directory = new File("plugins/" + plugin.getName());
+      else this.directory = directory;
       file = new File(directory, name.endsWith(".yml") ? name : name + ".yml");
       if(!this.file.exists()) regenerate();
+      this.stream = null;
+      reload();
+   }
+   public DynamicYamlConfiguration(JavaPlugin plugin, String directory, String name) {
+      this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
+   }
+
+   public DynamicYamlConfiguration(JavaPlugin plugin, Supplier<InputStream> stream) {
+      Validate.notNull(plugin);
+      this.plugin = plugin;
+      this.directory = null;
+      this.file = null;
+      this.stream = stream;
       reload();
    }
 
 
 
    @Override
-   public String getId() {
+   public String id() {
       return "";
    }
 
    @Override
-   public Map<String, Object> getData() {
+   public Map<String, Object> data() {
       return data;
    }
 
    @Override
-   public File getFile() {
+   public File file() {
       return file;
    }
 
    @Override
-   public File getDirectory() {
+   public File directory() {
       return directory;
    }
 
    @Override
-   public String getName() {
+   public DynamicConfigurationDirectory configurationDirectory() {
+      return configurationDirectory;
+   }
+
+   @Override
+   public IDynamicConfiguration configurationDirectory(DynamicConfigurationDirectory directory) {
+      if(!directory.directory().getPath().equals(directory().getPath())) {
+         this.directory = directory.directory();
+         file.renameTo(new File(this.directory, file.getName()));
+         reload();
+      }
+      this.configurationDirectory = directory;
+      return this;
+   }
+
+   @Override
+   public String name() {
       return file.getName();
    }
 
    @Override
-   public boolean isAutoSave() {
+   public boolean autoSave() {
       return autoSave;
+   }
+
+   @Override
+   public Map<String, String> comments() {
+      return ImmutableMap.copyOf(COMMENTS);
+   }
+
+   @Override
+   public Map<String, String> inlineComments() {
+      return ImmutableMap.copyOf(INLINE_COMMENTS);
    }
 
    @Override
@@ -90,29 +135,33 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
 
    @Override
    public IDynamicConfiguration regenerate() {
+      if(stream != null) {
+         return reload();
+      }
       if(this.file.exists()) this.file.delete();
-      InputStream rsc = plugin.getResource(getName()+".yml");
-      if(rsc == null) rsc = plugin.getResource((directory!=null?(directory.getPath().endsWith("/")||getName().startsWith("/") ?
-         directory.getPath() :directory.getPath()+"/"):"")+getName()+".yml");
+      InputStream rsc = plugin.getResource(name());
+      String dir = (directory!=null?(directory.getPath().endsWith("/") ?
+         directory.getPath() :directory.getPath()+"/"):"").replace(plugin.getDataFolder().getPath(),"");
+      if(rsc == null) rsc = plugin.getResource((dir.equals("/")?"":dir)+ name());
       if(directory!=null&&!directory.isDirectory())directory.mkdirs();
       try {
          if(rsc == null) file.createNewFile();
-         else DynamicConfigManager.writeFile(id, rsc,file);
+         else DynamicConfigurationManager.writeFile(rsc,file);
       } catch (IOException e) {
          e.printStackTrace();
       }
       reload();
       return this;
    }
-
    @Override
    public IDynamicConfiguration save() {
       try {
+         if(stream != null) return this;
          yaml.set(".",null);
          setToYML(this,yaml);
          String toString = yaml.saveToString();
          BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-         writer.write(DynamicConfigManager.prepareConfigString(id,toString));
+         writer.write(DynamicConfigurationManager.prepareConfigString(toString, this, COMMENTS, INLINE_COMMENTS));
          writer.flush();
          writer.close();
       } catch (IOException e) {
@@ -122,7 +171,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    }
 
    private void setToYML(IDynamicConfigurationSection input, ConfigurationSection section) {
-      for(Map.Entry<?, ?> entry : input.getData().entrySet()) {
+      for(Map.Entry<?, ?> entry : input.data().entrySet()) {
          String key = entry.getKey().toString();
          Object value = entry.getValue();
          if (value instanceof IDynamicConfigurationSection) {
@@ -137,23 +186,39 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
 
    @Override
    public IDynamicConfiguration reload() {
-      comments = DynamicConfigManager.getComments(file);
-      yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(DynamicConfigManager.getContent(id,file)));
-      this.data = new HashMap<>();
-      convertMapsToSections(yaml,this);
+      if(stream != null) {
+         COMMENTS.clear();
+         COMMENTS.putAll(DynamicConfigurationManager.getComments(stream.get()));
+         INLINE_COMMENTS.clear();
+         INLINE_COMMENTS.putAll(DynamicConfigurationManager.getInlineComments(stream.get()));
+         yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(stream.get()));
+         this.data = new LinkedHashMap<>();
+         convertMapsToSections(DynamicConfigurationManager.getKeys(stream.get()), yaml,this);
+         return this;
+      }
+      Supplier<InputStream> content = () -> DynamicConfigurationManager.getContent(file);
+      COMMENTS.clear();
+      COMMENTS.putAll(DynamicConfigurationManager.getComments(content.get()));
+      INLINE_COMMENTS.clear();
+      INLINE_COMMENTS.putAll(DynamicConfigurationManager.getInlineComments(content.get()));
+      yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(content.get()));
+      this.data = new LinkedHashMap<>();
+      convertMapsToSections(DynamicConfigurationManager.getKeys(content.get()), yaml,this);
       return this;
    }
 
-   private void convertMapsToSections(ConfigurationSection input, IDynamicConfigurationSection section) {
-      for(Map.Entry<?, ?> entry : input.getValues(true).entrySet()) {
-         String key = entry.getKey().toString();
-         Object value = entry.getValue();
+   private void convertMapsToSections(List<String> keys, ConfigurationSection input, IDynamicConfigurationSection section) {
+      for(int i = 0; i < keys.size(); i++) {
+         String key = keys.get(i);
+         Object value = input.get(key);
          if (value instanceof ConfigurationSection) {
-            IDynamicConfigurationSection sec = new DynamicYamlConfigurationSectionImpl(this,key,new HashMap<>());
-            this.convertMapsToSections((ConfigurationSection) value, sec);
-            section.getData().put(key, sec);
+            IDynamicConfigurationSection sec = new DynamicYamlConfigurationSectionImpl(this,key,new LinkedHashMap<>());
+            List<String> newKeys = keys.stream().filter(s->s.startsWith(key)&&!s.equals(key)).map(s->s.substring(s.split("\\.")[0].length()+1)).collect(Collectors.toList());
+            this.convertMapsToSections(newKeys, (ConfigurationSection) value, sec);
+            section.data().put(key, sec);
+            i += newKeys.size()-1;
          } else {
-            section.getData().put(key, value instanceof String ? ((String)value).replace("\\n","\n") : value);
+            section.data().put(key, value instanceof String ? ((String)value).replace("\\n","\n") : value);
          }
       }
    }
@@ -161,7 +226,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
 
 
    private HashSet<String> keys(IDynamicConfigurationSection map, HashSet<String> keys) {
-      for(String s : map.getData().keySet()) {
+      for(String s : map.data().keySet()) {
          keys.add(s);
          if(map.get(s) instanceof IDynamicConfigurationSection) keys.addAll(((IDynamicConfigurationSection) map.get(s))
             .getKeys(true).stream().map(str->s+"."+str).collect(Collectors.toList()));
@@ -205,47 +270,45 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
             start.set(lastKey, value);
          }else {
             if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
-               start.set(lastKey,new DynamicYamlConfigurationSectionImpl(this,lastKey,new HashMap<>()));
+               start.set(lastKey,new DynamicYamlConfigurationSectionImpl(this,lastKey,new LinkedHashMap<>()));
             start = (IDynamicConfigurationSection) start.get(lastKey);
          }
       }
+      lastPath=path;
       return autoSave ? save() : this;
    }
 
    @Override
    public IDynamicConfigurationSection set(String path, Object value, String comment) {
-      if(!comment.isEmpty()) {
-         int ind = path.lastIndexOf('.');
-         String newPath = (ind == -1 ? "" : path.substring(0,ind)+".") + id;
-         if(!isSet(path))
-            if(comment.contains("\n")) {
-               for(String s : comment.split("\n"))
-                  if(!isSet(newPath + "_COMMENT_" + comments)) {
-                     set(newPath + "_COMMENT_" + comments, " " + s);
-                     comments++;
-                  }
-            } else if(!isSet(newPath + "_COMMENT_" + comments)){
-               set(newPath + "_COMMENT_" + comments, " " + comment);
-               comments++;
-            }
-      }
+      String cmt = Arrays.stream(comment.split("\n")).map(s->s.startsWith("#")?s:"#"+s).collect(Collectors.joining("\n"));
+      if(!cmt.isEmpty())
+         COMMENTS.put(path,cmt);
+      return set(path,value);
+   }
+
+   @Override
+   public IDynamicConfigurationSection setInline(String path, Object value, String comment) {
+      String cmt = Arrays.stream(comment.split("\n")).map(s->s.startsWith("#")?s:"#"+s).collect(Collectors.joining("\n"));
+      if(!cmt.isEmpty())
+         INLINE_COMMENTS.put(path,cmt);
       return set(path,value);
    }
 
    @Override
    public IDynamicConfigurationSection comment(String... comment) {
-      for(String comm : comment)
-         if(comm.contains("\n")) {
-            for(String s : comm.split("\n"))
-               if(!isSet(id + "_COMMENT_" + (comments))){
-                  set(id + "_COMMENT_" + (comments), " " + s);
-                  comments++;
-               }
-         }
-         else if(!isSet(id + "_COMMENT_" + (comments))){
-            set(id + "_COMMENT_" + (comments), " " + comm);
-            comments++;
-         }
+      String cmt = Arrays.stream(comment).map(s->s.startsWith("#")?s:"#"+s).collect(Collectors.joining("\n"));
+      if(!cmt.isEmpty())
+         if(get(lastPath) instanceof IDynamicConfigurationSection)
+            INLINE_COMMENTS.put(lastPath,cmt);
+         else COMMENTS.put(lastPath,cmt);
+      return this;
+   }
+
+   @Override
+   public IDynamicConfigurationSection inlineComment(String... comment) {
+      String cmt = Arrays.stream(comment).map(s->s.startsWith("#")?s:"#"+s).collect(Collectors.joining("\n"));
+      if(!cmt.isEmpty())
+         INLINE_COMMENTS.put(lastPath,cmt);
       return this;
    }
 
@@ -278,8 +341,15 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    public IDynamicConfigurationSection createSection(String path) {
       IDynamicConfigurationSection sec = getSection(path);
       if(sec == null)
-         set(path,sec = new DynamicYamlConfigurationSectionImpl(this,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new HashMap<>()));
+         set(path, sec = new DynamicYamlConfigurationSectionImpl(this,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new LinkedHashMap<>()));
       return sec;
+   }
+
+   @Override
+   public IDynamicConfigurationSection createSection(String path, String comment) {
+      if(!comment.isEmpty())
+         INLINE_COMMENTS.put(path, (comment.startsWith("#") ? "" : "#")+comment);
+      return createSection(path);
    }
 
    @Override
@@ -290,7 +360,8 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    @Override
    public String getString(String path, String defaultValue) {
       Object value = get(path);
-      return !(value instanceof String) ? (value != null ? value.toString() : defaultValue) : value.toString();
+      return !(value instanceof String) ? (value != null ? (value instanceof List<?> ? ((List<?>)value).stream()
+         .map(o->o+"").collect(Collectors.joining("\n")) : value.toString()) : defaultValue) : value.toString();
    }
 
    @Override
@@ -303,8 +374,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
       Object value = get(path);
       Double f = defaultValue;
       if(!(value instanceof Double) && value!=null)
-         try {f = Double.parseDouble(value.toString());
-         }catch (Exception e) {}
+         try {f = Double.parseDouble(value.toString());}catch (Exception ignored) {}
       return !(value instanceof Double) ? (value != null ? f : defaultValue) : (Double) value;
    }
 
@@ -318,8 +388,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
       Object value = get(path);
       Integer f = defaultValue;
       if(!(value instanceof Integer) && value!=null)
-         try {f = Integer.parseInt(value.toString());
-         }catch (Exception e) {}
+         try {f = Integer.parseInt(value.toString());}catch (Exception ignored) {}
       return !(value instanceof Integer) ? (value != null ? f : defaultValue) : (Integer) value;
    }
 
@@ -333,8 +402,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
       Object value = get(path);
       Float f = defaultValue;
       if(!(value instanceof Float) && value!=null)
-         try {f = Float.parseFloat(value.toString());
-         }catch (Exception e) {}
+         try {f = Float.parseFloat(value.toString());}catch (Exception ignored) {}
       return !(value instanceof Float) ? (value != null ? f : defaultValue) : (Float) value;
    }
 
@@ -348,8 +416,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
       Object value = get(path);
       Byte f = defaultValue;
       if(!(value instanceof Byte) && value!=null)
-         try {f = Byte.parseByte(value.toString());
-         }catch (Exception e) {}
+         try {f = Byte.parseByte(value.toString());}catch (Exception ignored) {}
       return !(value instanceof Byte) ? (value != null ? f : defaultValue) : (Byte) value;
    }
 
@@ -363,8 +430,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
       Object value = get(path);
       Boolean f = defaultValue;
       if(!(value instanceof Boolean) && value!=null)
-         try {f = Boolean.parseBoolean(value.toString());
-         }catch (Exception e) {}
+         try {f = Boolean.parseBoolean(value.toString());}catch (Exception ignored) {}
       return !(value instanceof Boolean) ? (value != null ? f : defaultValue) : (Boolean) value;
    }
 
@@ -377,8 +443,9 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    public String getMessage(String path, String defaultValue) {
       Object value = get(path);
       if(value instanceof String) return value.toString().replace("\\n","\n");
-      if(value instanceof List) return String.join("\n", (Iterable<? extends CharSequence>) value);
+      if(value instanceof List) return String.join("\n", getListString(path));
       if(value instanceof String[]) return String.join("\n", (String[])value);
+      if(getString(path) != null) return getString(path);
       return defaultValue;
    }
 
@@ -390,19 +457,18 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    @Override
    public List<?> getList(String path, List<?> defaultValue) {
       Object value = get(path);
-      return !(value instanceof List) ? (value != null ? Collections.singletonList(value) : defaultValue) : (List<?>) value;
+      return !(value instanceof List) ? (value != null ? new ArrayList<>(Collections.singletonList(value)) : defaultValue) : (List<?>) value;
    }
 
    @Override
    public List<String> getListString(String path) {
-      return getListString(path,new ArrayList<>());
+      return getListString(path, new ArrayList<>());
    }
 
    @Override
    public List<String> getListString(String path, List<String> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("String"))return defaultValue;
-      return (List<String>)value;
+      return value == null ? defaultValue : (List<String>) value;
    }
 
    @Override
@@ -413,8 +479,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    @Override
    public List<Double> getListDouble(String path, List<Double> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Double"))return defaultValue;
-      return (List<Double>)value;
+      return value == null ? defaultValue : (List<Double>) value;
    }
 
    @Override
@@ -425,8 +490,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    @Override
    public List<Integer> getListInteger(String path, List<Integer> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Integer"))return defaultValue;
-      return (List<Integer>)value;
+      return value == null ? defaultValue : (List<Integer>) value;
    }
 
    @Override
@@ -437,8 +501,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    @Override
    public List<Float> getListFloat(String path, List<Float> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Float"))return defaultValue;
-      return (List<Float>)value;
+      return value == null ? defaultValue : (List<Float>) value;
    }
 
    @Override
@@ -449,8 +512,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    @Override
    public List<Byte> getListByte(String path, List<Byte> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Byte"))return defaultValue;
-      return (List<Byte>)value;
+      return value == null ? defaultValue : (List<Byte>) value;
    }
 
    @Override
@@ -461,8 +523,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
    @Override
    public List<Boolean> getListBoolean(String path, List<Boolean> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Boolean"))return defaultValue;
-      return (List<Boolean>)value;
+      return value == null ? defaultValue : (List<Boolean>) value;
    }
 
    @Override

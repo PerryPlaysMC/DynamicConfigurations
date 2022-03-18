@@ -1,8 +1,6 @@
 package config.yaml;
 
 import config.IDynamicConfigurationSection;
-import config.json.DynamicJsonConfiguration;
-import config.json.DynamicJsonConfigurationSection;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,6 +15,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    private final DynamicYamlConfiguration configuration;
    private final String id;
    private final Map<String, Object> data;
+   private String lastPath = "";
 
    protected DynamicYamlConfigurationSectionImpl(DynamicYamlConfiguration configuration, String id, Map<String, Object> data) {
       this.configuration = configuration;
@@ -26,12 +25,12 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
 
 
    @Override
-   public String getId() {
+   public String id() {
       return id;
    }
 
    @Override
-   public Map<String, Object> getData() {
+   public Map<String, Object> data() {
       return data;
    }
 
@@ -48,7 +47,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    }
 
    private HashSet<String> keys(IDynamicConfigurationSection map, HashSet<String> keys) {
-      for(String s : map.getData().keySet()) {
+      for(String s : map.data().keySet()) {
          keys.add(s);
          if(map.get(s) instanceof IDynamicConfigurationSection) keys.addAll(((IDynamicConfigurationSection) map.get(s))
             .getKeys(true).stream().map(str->s+"."+str).collect(Collectors.toList()));
@@ -84,7 +83,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
       if(paths.length == 1) {
          if(value == null) data.remove(paths[0]);
          else data.put(paths[0],value);
-         return configuration.isAutoSave() ? save() : this;
+         return configuration.autoSave() ? save() : this;
       }
       for(int i = 0; i < paths.length; i++) {
          String lastKey = paths[i];
@@ -92,41 +91,39 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
             start.set(lastKey, value);
          }else {
             if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
-               start.set(lastKey,new DynamicYamlConfigurationSectionImpl(configuration,lastKey,new HashMap<>()));
+               start.set(lastKey,new DynamicYamlConfigurationSectionImpl(configuration,lastKey,new LinkedHashMap<>()));
             start = (IDynamicConfigurationSection) start.get(lastKey);
          }
       }
-      return configuration.isAutoSave() ? save() : this;
+      lastPath = path;
+      return configuration.autoSave() ? save() : this;
    }
 
    @Override
    public IDynamicConfigurationSection set(String path, Object value, String comment) {
-      if(!comment.isEmpty()) {
-         int ind = path.lastIndexOf('.');
-         String newPath = (ind == -1 ? "" : path.substring(0,ind)+".") + configuration.id;
-         if(!isSet(path))
-            if(comment.contains("\n")) {
-               for(String s : comment.split("\n"))
-                  if(!isSet(newPath + "_COMMENT_" + configuration.comments)) {
-                     set(newPath + "_COMMENT_" + configuration.comments, " " + s);
-                     configuration.comments++;
-                  }
-            } else if(!isSet(newPath + "_COMMENT_" + configuration.comments)){
-               set(newPath + "_COMMENT_" + configuration.comments, " " + comment);
-               configuration.comments++;
-            }
-      }
+      if(!comment.isEmpty())
+         configuration.COMMENTS.put(id() + "." + path,"#" + comment);
+      return set(path,value);
+   }
+
+   @Override
+   public IDynamicConfigurationSection setInline(String path, Object value, String comment) {
+      if(!comment.isEmpty())
+         configuration.INLINE_COMMENTS.put(id() + "." + path,"#" + comment);
       return set(path,value);
    }
 
    @Override
    public IDynamicConfigurationSection comment(String... comment) {
-      for(String comm : comment)
-         if(comm.contains("\n")) {
-            for(String s : comm.split("\n"))
-               if(!isSet(id + "_COMMENT_" + (configuration.comments + 1))) set(id + "_COMMENT_" + (++configuration.comments), " " + s);
-         }else if(!isSet(id + "_COMMENT_" + (configuration.comments + 1))) set(id + "_COMMENT_" + (++configuration.comments), " " + comm);
+      if(!String.join("\n#",comment).isEmpty())
+         configuration.COMMENTS.put(id() + "." + lastPath, "#" + String.join("\n#",comment));
+      return this;
+   }
 
+   @Override
+   public IDynamicConfigurationSection inlineComment(String... comment) {
+      if(!String.join("\n#",comment).isEmpty())
+         configuration.INLINE_COMMENTS.put(id() + "." + lastPath, "#" + String.join("\n#",comment));
       return this;
    }
 
@@ -159,8 +156,15 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    public IDynamicConfigurationSection createSection(String path) {
       IDynamicConfigurationSection sec = getSection(path);
       if(sec == null)
-         set(path,sec = new DynamicYamlConfigurationSectionImpl(configuration,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new HashMap<>()));
+         set(path,sec = new DynamicYamlConfigurationSectionImpl(configuration,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new LinkedHashMap<>()));
       return sec;
+   }
+
+   @Override
+   public IDynamicConfigurationSection createSection(String path, String comment) {
+      if(!comment.isEmpty())
+         configuration.INLINE_COMMENTS.put(id() + "." + path,"#" + comment);
+      return createSection(path);
    }
 
    @Override
@@ -282,8 +286,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    @Override
    public List<String> getListString(String path, List<String> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("String"))return defaultValue;
-      return (List<String>)value;
+      return value == null ? defaultValue : (List<String>) value;
    }
 
    @Override
@@ -294,8 +297,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    @Override
    public List<Double> getListDouble(String path, List<Double> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Double"))return defaultValue;
-      return (List<Double>)value;
+      return value == null ? defaultValue : (List<Double>) value;
    }
 
    @Override
@@ -306,8 +308,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    @Override
    public List<Integer> getListInteger(String path, List<Integer> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Integer"))return defaultValue;
-      return (List<Integer>)value;
+      return value == null ? defaultValue : (List<Integer>) value;
    }
 
    @Override
@@ -318,8 +319,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    @Override
    public List<Float> getListFloat(String path, List<Float> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Float"))return defaultValue;
-      return (List<Float>)value;
+      return value == null ? defaultValue : (List<Float>) value;
    }
 
    @Override
@@ -330,8 +330,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    @Override
    public List<Byte> getListByte(String path, List<Byte> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Byte"))return defaultValue;
-      return (List<Byte>)value;
+      return value == null ? defaultValue : (List<Byte>) value;
    }
 
    @Override
@@ -342,8 +341,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    @Override
    public List<Boolean> getListBoolean(String path, List<Boolean> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Boolean"))return defaultValue;
-      return (List<Boolean>)value;
+      return value == null ? defaultValue : (List<Boolean>) value;
    }
 
    @Override

@@ -1,8 +1,6 @@
 package config.json;
 
-import config.IDynamicConfiguration;
 import config.IDynamicConfigurationSection;
-import config.yaml.DynamicYamlConfigurationSectionImpl;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,11 +23,11 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
    }
 
    @Override
-   public String getId() {
+   public String id() {
       return id;
    }
 
-   public Map<String, Object> getData() {
+   public Map<String, Object> data() {
       return data;
    }
 
@@ -46,7 +44,7 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
    }
 
    private HashSet<String> keys(IDynamicConfigurationSection map, HashSet<String> keys) {
-      for(String s : map.getData().keySet()) {
+      for(String s : map.data().keySet()) {
          keys.add(s);
          if(map.get(s) instanceof IDynamicConfigurationSection) keys.addAll(((IDynamicConfigurationSection) map.get(s))
             .getKeys(true).stream().map(str->s+"."+str).collect(Collectors.toList()));
@@ -82,7 +80,7 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
       if(paths.length == 1) {
          if(value == null) data.remove(paths[0]);
          else data.put(paths[0],value);
-         return configuration.isAutoSave() ? save() : this;
+         return configuration.autoSave() ? save() : this;
       }
       for(int i = 0; i < paths.length; i++) {
          String lastKey = paths[i];
@@ -90,21 +88,31 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
             start.set(lastKey, value);
          }else {
             if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
-               start.set(lastKey,new DynamicJsonConfigurationSection(configuration,lastKey,new HashMap<>()));
+               start.set(lastKey,new DynamicJsonConfigurationSection(configuration,lastKey,new LinkedHashMap<>()));
             start = (IDynamicConfigurationSection) start.get(lastKey);
          }
       }
-      return configuration.isAutoSave() ? save() : this;
+      return configuration.autoSave() ? save() : this;
    }
 
    @Override
    public IDynamicConfigurationSection set(String path, Object value, String comment) {
-      throw new UnsupportedOperationException("Json Configs do not support comments");
+      throw new UnsupportedOperationException("Comments are not supported in json files");
+   }
+
+   @Override
+   public IDynamicConfigurationSection setInline(String path, Object value, String comment) {
+      throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
    @Override
    public IDynamicConfigurationSection comment(String... comment) {
-      throw new UnsupportedOperationException("Json Configs do not support comments");
+      throw new UnsupportedOperationException("Comments are not supported in json files");
+   }
+
+   @Override
+   public IDynamicConfigurationSection inlineComment(String... comment) {
+      throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
    @Override
@@ -135,8 +143,13 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
    @Override
    public IDynamicConfigurationSection createSection(String path) {
       IDynamicConfigurationSection sec = getSection(path);
-      if(sec == null) set(path,sec = new DynamicJsonConfigurationSection(configuration,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new HashMap<>()));
+      if(sec == null) set(path,sec = new DynamicJsonConfigurationSection(configuration,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new LinkedHashMap<>()));
       return sec;
+   }
+
+   @Override
+   public IDynamicConfigurationSection createSection(String path, String comment) {
+      throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
    @Override
@@ -258,8 +271,7 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
    @Override
    public List<String> getListString(String path, List<String> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("String"))return defaultValue;
-      return (List<String>)value;
+      return value == null ? defaultValue : (List<String>) value;
    }
 
    @Override
@@ -270,8 +282,7 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
    @Override
    public List<Double> getListDouble(String path, List<Double> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Double"))return defaultValue;
-      return (List<Double>)value;
+      return value == null ? defaultValue : (List<Double>) value;
    }
 
    @Override
@@ -282,8 +293,7 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
    @Override
    public List<Integer> getListInteger(String path, List<Integer> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Integer"))return defaultValue;
-      return (List<Integer>)value;
+      return value == null ? defaultValue : (List<Integer>) value;
    }
 
    @Override
@@ -294,8 +304,7 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
    @Override
    public List<Float> getListFloat(String path, List<Float> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Float"))return defaultValue;
-      return (List<Float>)value;
+      return value == null ? defaultValue : (List<Float>) value;
    }
 
    @Override
@@ -306,8 +315,7 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
    @Override
    public List<Byte> getListByte(String path, List<Byte> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Byte"))return defaultValue;
-      return (List<Byte>)value;
+      return value == null ? defaultValue : (List<Byte>) value;
    }
 
    @Override
@@ -318,8 +326,7 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
    @Override
    public List<Boolean> getListBoolean(String path, List<Boolean> defaultValue) {
       List<?> value = getList(path, null);
-      if(value.getClass().getTypeParameters().length != 1 || !value.getClass().getTypeParameters()[0].getTypeName().contains("Boolean"))return defaultValue;
-      return (List<Boolean>)value;
+      return value == null ? defaultValue : (List<Boolean>) value;
    }
 
    @Override

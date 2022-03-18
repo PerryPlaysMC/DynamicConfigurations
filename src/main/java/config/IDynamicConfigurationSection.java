@@ -11,9 +11,9 @@ import java.util.Set;
 
 public interface IDynamicConfigurationSection {
 
-   String getId();
+   String id();
 
-   Map<String, Object> getData();
+   Map<String, Object> data();
 
    /**
     * Save the config
@@ -58,11 +58,27 @@ public interface IDynamicConfigurationSection {
    IDynamicConfigurationSection set(String path, Object value, String comment);
 
    /**
+    * Set a value in the config with the provided path with an inline-comment
+    * @param path Path to get to the config
+    * @param value Object to be set in the file
+    * @param comment The comment associated with the data
+    * @return this
+    */
+   IDynamicConfigurationSection setInline(String path, Object value, String comment);
+
+   /**
     * Add a comment to the file from the previous key
     * @param comment The comment
     * @return this
     */
    IDynamicConfigurationSection comment(String... comment);
+
+   /**
+    * Add an inline-comment to the file from the previous key
+    * @param comment The comment
+    * @return this
+    */
+   IDynamicConfigurationSection inlineComment(String... comment);
 
    /**
     * Get an Object from the config
@@ -91,6 +107,13 @@ public interface IDynamicConfigurationSection {
     * @return The Configuration Section that was created
     */
    IDynamicConfigurationSection createSection(String path);
+
+   /**
+    * Create a ConfigurationSection
+    * @param path The path where the configuration section will be located
+    * @return The Configuration Section that was created
+    */
+   IDynamicConfigurationSection createSection(String path, String comment);
 
    /**
     * Get a String from the config
@@ -297,15 +320,15 @@ public interface IDynamicConfigurationSection {
 
 
    default String asString() {
-      String res = (getId().isEmpty() ? "" : getId() + ": ")+"{\n";
-      for(Map.Entry<String, Object> key_val : getData().entrySet()) {
+      String res = (id().isEmpty() ? "" : id() + ": ")+"{\n";
+      for(Map.Entry<String, Object> key_val : data().entrySet()) {
          String key = key_val.getKey();
          Object val = key_val.getValue();
          res+=(res.length()>2?",\n":"")+(indent(1))+key+": ";
          if(val instanceof Map)
             res+=fromMap(2,(Map<?, ?>) val);
          if(val instanceof IDynamicConfigurationSection)
-            res+=fromMap(2,((IDynamicConfigurationSection) val).getData());
+            res+=fromMap(2,((IDynamicConfigurationSection) val).data());
          else res+=val;
       }
       return res + (res.length() > 2 ? "\n}" : "}");
@@ -318,7 +341,7 @@ public interface IDynamicConfigurationSection {
          Object val = key_val.getValue();
          res+=(res.length()>2?",\n":"")+indent(indent)+key+": ";
          if(val instanceof Map) res+=fromMap(indent+1,(Map<?, ?>) val);
-         if(val instanceof IDynamicConfigurationSection) res+=fromMap(indent+1,((IDynamicConfigurationSection) val).getData());
+         if(val instanceof IDynamicConfigurationSection) res+=fromMap(indent+1,((IDynamicConfigurationSection) val).data());
          else res+=val;
       }
       return res + (res.length() > 2 ? "\n"+indent(indent-1) +  "}" : "}");

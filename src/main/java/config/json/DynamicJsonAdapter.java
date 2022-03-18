@@ -1,11 +1,9 @@
 package config.json;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import config.IDynamicConfigurationSection;
 
 import java.io.IOException;
 import java.util.Map;
@@ -19,7 +17,7 @@ public class DynamicJsonAdapter extends TypeAdapter<DynamicJsonConfigurationSect
    private Gson GSON;
    private final DynamicJsonConfiguration configuration;
 
-   public void setGson(Gson GSON) {
+   public void gson(Gson GSON) {
       this.GSON = GSON;
    }
 
@@ -29,7 +27,7 @@ public class DynamicJsonAdapter extends TypeAdapter<DynamicJsonConfigurationSect
 
    @Override
    public void write(JsonWriter jsonWriter, DynamicJsonConfigurationSection iDynamicConfigurationSection) throws IOException {
-      jsonWriter.jsonValue(GSON.toJson(iDynamicConfigurationSection.getData()).replace("\n","\n  "));
+      jsonWriter.jsonValue(GSON.toJson(iDynamicConfigurationSection.data()).replace("\n","\n  "));
    }
 
    @Override

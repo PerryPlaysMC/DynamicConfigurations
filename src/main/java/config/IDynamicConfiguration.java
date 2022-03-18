@@ -1,7 +1,6 @@
 package config;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
 
 
@@ -12,13 +11,21 @@ import java.util.Map;
 
 public interface IDynamicConfiguration extends IDynamicConfigurationSection {
 
-   File getFile();
+   File file();
 
-   File getDirectory();
+   File directory();
 
-   String getName();
+   DynamicConfigurationDirectory configurationDirectory();
 
-   boolean isAutoSave();
+   IDynamicConfiguration configurationDirectory(DynamicConfigurationDirectory directory);
+
+   String name();
+
+   boolean autoSave();
+
+   Map<String,String> comments();
+
+   Map<String,String> inlineComments();
 
    /**
     * Should it save whenever it is edited
