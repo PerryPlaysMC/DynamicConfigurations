@@ -44,3 +44,4 @@ directory.reload();
    <version>1.2</version>
 </dependency>
 ```
+[![](https://jitpack.io/v/PerryPlaysMC/DynamicConfigurations.svg)](https://jitpack.io/#PerryPlaysMC/DynamicConfigurations)
