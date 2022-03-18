@@ -2,20 +2,28 @@
 
 # Usage
 ```java
+DynamicConfigurationDirectory directory = new DynamicConfigurationDirectory(this, new File("plugins/Example", "thisisatest"));
+IDynamicConfiguration cf1 = directory.createConfiguration("example1.yml");
+IDynamicConfiguration cf2 = directory.createConfiguration("example2.yml");
+IDynamicConfiguration cf3 = DynamicConfigurationManager.createConfiguration(this, "plugins/Example/thisisatest", "example3.yml");
+IDynamicConfiguration cf4 = DynamicConfigurationManager.createConfiguration(this, new File("plugins/Example/thisisatest"), "example4.yml");
+directory.addConfiguration(cf3);
+directory.reload();
 {
    IDynamicConfiguration json =
-      DynamicConfigManager.createConfiguration(this, "plugins/Test/test.json")
-      .autoSave(true);
+      DynamicConfigurationManager.createConfiguration(this, "plugins/Example/example.json")
+         .autoSave(true);
    json.set("array", new String[]{"a","b","c"})
       .set("list", Arrays.asList("d","e","f"))
       .set("string", "h\ni\nj");
 }
 {
    IDynamicConfiguration yml =
-      DynamicConfigManager.createConfiguration(this, "plugins/Test/test.yml")
+      DynamicConfigurationManager.createConfiguration(this, "plugins/Example/example.yml")
          .autoSave(true);
    yml.set("array", new String[]{"a","b","c"})
       .set("list", Arrays.asList("d","e","f"))
+      .set("list2.list", Arrays.asList("g","h","i"))
       .set("string", "h\ni\nj", "test comment")
       .set("string2.test", "h\ni\nj", "test comment :D");
 }
@@ -33,6 +41,6 @@
 <dependency>
    <groupId>com.github.PerryPlaysMC</groupId>
    <artifactId>DynamicConfigurations</artifactId>
-   <version>1.1-SNAPSHOT</version>
+   <version>1.2</version>
 </dependency>
 ```
