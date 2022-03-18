@@ -1,5 +1,8 @@
 # DynamicConfigurations
 
+[Join the discord to be notified of updates!](https://discord.gg/QuG8R6c3ry)
+
+
 # Usage
 ```java
 DynamicConfigurationDirectory directory = new DynamicConfigurationDirectory(this, new File("plugins/Example", "thisisatest"));
