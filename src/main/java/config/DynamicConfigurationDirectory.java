@@ -67,6 +67,22 @@ public class DynamicConfigurationDirectory {
       return configuration;
    }
 
+   public IDynamicConfiguration getConfiguration(String name) {
+      if(name.contains("/")) {
+         DynamicConfigurationDirectory dir = this;
+         String[] split = name.split("/");
+         for(int i = 0; i < split.length - 1; i++) {
+            String s = split[i];
+            if(!s.isEmpty())
+               dir = dir.getOrCreateSubDirectory(s);
+         }
+         return dir.getConfiguration(name);
+      }else {
+         for(IDynamicConfiguration configuration : configurations)
+            if(configuration.name().equalsIgnoreCase(name))return configuration;
+      }
+      return null;
+   }
 
    public DynamicConfigurationDirectory getSubDirectory(String name) {
       if(!allowsSubDirectories())throw new IllegalStateException("You can't grab a subdirectory if 'allowsSubDirectories' is false");
