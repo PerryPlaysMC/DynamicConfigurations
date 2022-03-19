@@ -25,10 +25,8 @@ directory.reload();
       DynamicConfigurationManager.createConfiguration(this, "plugins/Example/example.yml")
          .autoSave(true);
    yml.set("array", new String[]{"a","b","c"})
-      .set("list", Arrays.asList("d","e","f"))
-      .set("list2.list", Arrays.asList("g","h","i"))
-      .set("string", "h\ni\nj", "test comment")
-      .set("string2.test", "h\ni\nj", "test comment :D");
+      .setInline("list", Arrays.asList("d","e","f"), "Inline comment!")
+      .set("string", "h\ni\nj", "above comment!");
 }
 ```
 
