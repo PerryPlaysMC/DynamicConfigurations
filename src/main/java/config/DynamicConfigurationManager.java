@@ -171,7 +171,7 @@ public class DynamicConfigurationManager {
       int lastIndent = -1;
       List<String> followPath = new ArrayList<>();
       Pattern pattern = Pattern.compile("(\\s*)([^:]+):\\s*('?.+'?)?", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
-      Pattern pattern2 = Pattern.compile("(\\s*)-\\s*('?.+'?)?", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+      Pattern pattern2 = Pattern.compile("(\\s*)-\\s*('?.+'?)?\\s*#?", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
       StringBuilder config = new StringBuilder();
       String[] split = configString.split("\n");
       for(int i = 0; i < split.length; i++) {
