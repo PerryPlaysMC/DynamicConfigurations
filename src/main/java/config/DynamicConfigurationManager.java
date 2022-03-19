@@ -223,9 +223,15 @@ public class DynamicConfigurationManager {
          }
          if(!config.toString().isEmpty())
             config.append("\n");
-         if(inlineComments.containsKey(path) && inlineComments.get(path).length() > 1)
+         if(inlineComments.containsKey(path) && inlineComments.get(path).length() > 1) {
+            int in = og.indexOf("\n");
+            if(in!=-1) {
+               String sub = og.substring(0,in);
+               config.append(sub).append(" ").append(inlineComments.get(path));
+               config.append(og.substring(in));
+            }else
             config.append(og).append(" ").append(inlineComments.get(path));
-         else if(comments.containsKey(path) && comments.get(path).length() > 1)
+         }else if(comments.containsKey(path) && comments.get(path).length() > 1)
             config.append(indentStr).append(comments.get(path)).append("\n").append(og);
          else config.append(og);
          lastIndent = indent;
@@ -259,7 +265,7 @@ public class DynamicConfigurationManager {
          List<String> keys = new LinkedList<>();
          String path;
          int lastIndent = -1;
-         Pattern pattern = Pattern.compile("(\\s*)([^:]+)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+         Pattern pattern = Pattern.compile("(\\s*)([^:]+):", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 
          List<String> followPath = new ArrayList<>();
          while((currentLine = reader.readLine()) != null) {
@@ -268,8 +274,9 @@ public class DynamicConfigurationManager {
             if(matcher.find()) {
                indent = matcher.group(1).length();
                currentLine = matcher.group(2);
-            }
-            if(currentLine.isEmpty()||currentLine.startsWith("#"))continue;
+            }else continue;
+            if(currentLine.isEmpty()||currentLine.startsWith("#")||currentLine.replaceAll("\\s","").startsWith("#")
+               ||currentLine.replaceAll("\\s","").startsWith("-"))continue;
             followPath = createPath(followPath, currentLine, indent, lastIndent);
             path = String.join(".",followPath).replace("'","");
             keys.add(path);
@@ -292,7 +299,7 @@ public class DynamicConfigurationManager {
          HashMap<String, String> map = new HashMap<>();
          String path, comment = "";
          int lastIndent = -1;
-         Pattern pattern = Pattern.compile("(\\s*)([^:]+)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+         Pattern pattern = Pattern.compile("(\\s*)([^:]+):", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 
          List<String> followPath = new ArrayList<>();
          while((currentLine = reader.readLine()) != null) {
@@ -347,7 +354,7 @@ public class DynamicConfigurationManager {
          String comment = "";
          int lastIndent = -1;
          Pattern pattern = Pattern.compile("(\\s*)([^:]+):(?:.*)?(#.+)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-         Pattern pattern2 = Pattern.compile("(\\s*)([^:]+)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+         Pattern pattern2 = Pattern.compile("(\\s*)([^:]+):", Pattern.DOTALL | Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 
          List<String> followPath = new ArrayList<>();
          while((currentLine = reader.readLine()) != null) {

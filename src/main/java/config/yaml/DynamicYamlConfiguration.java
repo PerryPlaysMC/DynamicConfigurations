@@ -217,10 +217,11 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
          Object value = input.get(key);
          if (value instanceof ConfigurationSection) {
             IDynamicConfigurationSection sec = new DynamicYamlConfigurationSectionImpl(this,key,new LinkedHashMap<>());
-            List<String> newKeys = keys.stream().filter(s->s.startsWith(key)&&!s.equals(key)).map(s->s.substring(s.split("\\.")[0].length()+1)).collect(Collectors.toList());
+            List<String> newKeys = keys.stream().filter(s->s.startsWith(key)&&!s.equals(key))
+               .map(s->s.substring(s.split("\\.")[0].length()+1)).collect(Collectors.toList());
             this.convertMapsToSections(newKeys, (ConfigurationSection) value, sec);
             section.data().put(key, sec);
-            i += newKeys.size()-1;
+            i += newKeys.size();
          } else {
             section.data().put(key, value instanceof String ? ((String)value).replace("\\n","\n") : value);
          }
