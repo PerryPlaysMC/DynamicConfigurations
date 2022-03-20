@@ -199,7 +199,7 @@ public class DynamicConfigurationManager {
          if(configuration.get(path) instanceof String && !val.isEmpty() && e > -1 && s > -1) {
             StringBuilder value = new StringBuilder(val);
             if(val.startsWith("'") && !val.endsWith("'")) i = appendMessage(split, i,indentStr,value);
-            if(!value.substring(1).startsWith("'"))value.insert(0,"'");
+            if(value.charAt(0) != '\'')value.insert(0,"'");
             if(value.charAt(value.length()-1) != '\'') value.append('\'');
             og.replace(s,e,value.toString());
          }else if(configuration.getListString(path, null) != null) {
