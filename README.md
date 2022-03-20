@@ -42,7 +42,7 @@ directory.reload();
 <dependency>
    <groupId>com.github.PerryPlaysMC</groupId>
    <artifactId>DynamicConfigurations</artifactId>
-   <version>v1.2.4</version>
+   <version>v1.2.5</version>
 </dependency>
 ```
 [![](https://jitpack.io/v/PerryPlaysMC/DynamicConfigurations.svg)](https://jitpack.io/#PerryPlaysMC/DynamicConfigurations)
