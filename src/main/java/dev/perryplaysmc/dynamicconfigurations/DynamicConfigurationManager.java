@@ -309,7 +309,7 @@ public class DynamicConfigurationManager {
                currentLine = matcher.group(2);
             }
             if(currentLine.isEmpty())continue;
-            if(currentLine.startsWith("#")) {
+            if(currentLine.replaceAll("\\s","").startsWith("#")) {
                comment += currentLine + (comment.isEmpty() ? "" : "\n");
                continue;
             }
