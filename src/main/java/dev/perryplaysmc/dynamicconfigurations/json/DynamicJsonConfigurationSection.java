@@ -1,6 +1,6 @@
-package config.json;
+package dev.perryplaysmc.dynamicconfigurations.json;
 
-import config.IDynamicConfigurationSection;
+import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationSection;
 
 import java.util.*;
 import java.util.stream.Collectors;

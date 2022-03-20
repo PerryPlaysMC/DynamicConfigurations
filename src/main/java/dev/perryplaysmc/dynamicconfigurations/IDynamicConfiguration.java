@@ -1,4 +1,4 @@
-package config;
+package dev.perryplaysmc.dynamicconfigurations;
 
 import java.io.File;
 import java.util.Map;

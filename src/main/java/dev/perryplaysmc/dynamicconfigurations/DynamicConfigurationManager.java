@@ -1,8 +1,7 @@
-package config;
+package dev.perryplaysmc.dynamicconfigurations;
 
-import config.json.DynamicJsonConfiguration;
-import config.json.DynamicJsonConfigurationSection;
-import config.yaml.DynamicYamlConfiguration;
+import dev.perryplaysmc.dynamicconfigurations.json.DynamicJsonConfiguration;
+import dev.perryplaysmc.dynamicconfigurations.yaml.DynamicYamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;

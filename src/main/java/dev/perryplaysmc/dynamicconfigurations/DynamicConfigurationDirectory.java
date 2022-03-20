@@ -1,4 +1,4 @@
-package config;
+package dev.perryplaysmc.dynamicconfigurations;
 
 import org.bukkit.plugin.java.JavaPlugin;
 

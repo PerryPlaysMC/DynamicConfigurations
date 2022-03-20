@@ -1,22 +1,16 @@
-package config.yaml;
+package dev.perryplaysmc.dynamicconfigurations.yaml;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import config.DynamicConfigurationDirectory;
-import config.DynamicConfigurationManager;
-import config.IDynamicConfiguration;
-import config.IDynamicConfigurationSection;
-import config.json.DynamicJsonAdapter;
-import config.json.DynamicJsonConfigurationSection;
+import dev.perryplaysmc.dynamicconfigurations.DynamicConfigurationDirectory;
+import dev.perryplaysmc.dynamicconfigurations.DynamicConfigurationManager;
+import dev.perryplaysmc.dynamicconfigurations.IDynamicConfiguration;
+import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationSection;
 import org.apache.commons.lang.Validate;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.yaml.snakeyaml.DumperOptions;
 
 import java.io.*;
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;

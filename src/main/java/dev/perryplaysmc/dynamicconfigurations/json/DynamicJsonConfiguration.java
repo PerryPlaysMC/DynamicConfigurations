@@ -1,8 +1,16 @@
-package config.yaml;
+package dev.perryplaysmc.dynamicconfigurations.json;
 
-import config.IDynamicConfigurationSection;
+import com.google.gson.*;
+import dev.perryplaysmc.dynamicconfigurations.DynamicConfigurationDirectory;
+import dev.perryplaysmc.dynamicconfigurations.DynamicConfigurationManager;
+import dev.perryplaysmc.dynamicconfigurations.IDynamicConfiguration;
+import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationSection;
+import org.apache.commons.lang.Validate;
+import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.*;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -10,23 +18,69 @@ import java.util.stream.Collectors;
  * Created: 10/2021
  **/
 
-public class DynamicYamlConfigurationSectionImpl implements IDynamicConfigurationSection {
+public class DynamicJsonConfiguration implements IDynamicConfiguration {
+   private Map<String, Object> data = new LinkedHashMap<>();
 
-   private final DynamicYamlConfiguration configuration;
-   private final String id;
-   private final Map<String, Object> data;
-   private String lastPath = "";
+   private final File file;
+   private File directory;
+   private final JavaPlugin plugin;
+   private boolean autoSave = false;
+   private final Supplier<InputStream> stream;
+   private DynamicConfigurationDirectory configurationDirectory = null;
 
-   protected DynamicYamlConfigurationSectionImpl(DynamicYamlConfiguration configuration, String id, Map<String, Object> data) {
-      this.configuration = configuration;
-      this.id = id;
-      this.data = data;
+   private final DynamicJsonAdapter adapter = new DynamicJsonAdapter(this);
+   private final Gson GSON = new GsonBuilder().setPrettyPrinting().registerTypeAdapter(DynamicJsonConfigurationSection.class, adapter).create();
+
+   public DynamicJsonConfiguration(JavaPlugin plugin, File directory, String name) {
+      Validate.notNull(plugin);
+      this.plugin = plugin;
+      if(directory != null)
+         this.directory = directory;
+      else if(name.contains("/"))
+         this.directory = new File(name.substring(0,name.lastIndexOf('/')));
+      else this.directory = new File("plugins/" + plugin.getName());
+      if(name.contains("/")) name = name.substring(name.lastIndexOf('/')+1);
+      this.file = new File(this.directory, (name.endsWith(".json") ? name : name + ".json"));
+      if(!this.file.exists()) regenerate();
+      this.stream = null;
+      reload();
+      adapter.gson(GSON);
+   }
+   public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
+      this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
+   }
+   public DynamicJsonConfiguration(JavaPlugin plugin, Supplier<InputStream> stream) {
+      Validate.notNull(plugin);
+      this.plugin = plugin;
+      this.directory = null;
+      this.file = null;
+      this.stream = stream;
+      reload();
+   }
+   public DynamicJsonConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
+      this(plugin,directory.directory().getPath(),name);
+      this.configurationDirectory = directory;
    }
 
+   @Override
+   public DynamicConfigurationDirectory configurationDirectory() {
+      return configurationDirectory;
+   }
+
+   @Override
+   public IDynamicConfiguration configurationDirectory(DynamicConfigurationDirectory directory) {
+      if(!directory.directory().getPath().equals(directory().getPath())) {
+         this.directory = directory.directory();
+         file.renameTo(new File(this.directory, file.getName()));
+         reload();
+      }
+      this.configurationDirectory = directory;
+      return this;
+   }
 
    @Override
    public String id() {
-      return id;
+      return "";
    }
 
    @Override
@@ -35,14 +89,75 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    }
 
    @Override
-   public IDynamicConfigurationSection save() {
-      configuration.save();
+   public File file() {
+      return file;
+   }
+
+   @Override
+   public File directory() {
+      return directory;
+   }
+
+   @Override
+   public String name() {
+      return file.getName();
+   }
+
+   @Override
+   public boolean autoSave() {
+      return autoSave;
+   }
+
+   @Override
+   public Map<String, String> comments() {
+      throw new UnsupportedOperationException("Comments are not supported in json files");
+   }
+
+   @Override
+   public Map<String, String> inlineComments() {
+      throw new UnsupportedOperationException("Comments are not supported in json files");
+   }
+
+   @Override
+   public IDynamicConfiguration autoSave(boolean autoSave) {
+      this.autoSave = autoSave;
       return this;
    }
 
    @Override
-   public IDynamicConfigurationSection reload() {
-      configuration.reload();
+   public IDynamicConfiguration regenerate() {
+      if(stream != null) {
+         return reload();
+      }
+      if(this.file.exists()) this.file.delete();
+      InputStream rsc = plugin.getResource(name());
+      if(rsc == null) rsc = plugin.getResource((directory!=null?(directory.getPath().endsWith("/")|| name().startsWith("/") ? directory.getPath() :directory.getPath()+"/"):"")+ name());
+      if(directory!=null&&!directory.isDirectory())directory.mkdirs();
+      try {
+         if(rsc == null) file.createNewFile();
+         else DynamicConfigurationManager.writeFile(rsc,file);
+      } catch (IOException e) {
+         e.printStackTrace();
+      }
+      return this;
+   }
+
+   @Override
+   public IDynamicConfiguration save() {
+      if(stream != null) return this;
+      DynamicConfigurationManager.writeFile(Collections.singletonList(GSON.toJson(data)), file);
+      return this;
+   }
+   @Override
+   public IDynamicConfiguration reload() {
+      try {
+         if(stream != null)
+            data = (Map<String, Object>) GSON.fromJson(new InputStreamReader(stream.get()), Map.class);
+         else data = (Map<String, Object>) GSON.fromJson(new FileReader(file), Map.class);
+      } catch (FileNotFoundException e) {
+         e.printStackTrace();
+      }
+      if(data == null) data = new LinkedHashMap<>();
       return this;
    }
 
@@ -83,7 +198,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
       if(paths.length == 1) {
          if(value == null) data.remove(paths[0]);
          else data.put(paths[0],value);
-         return configuration.autoSave() ? save() : this;
+         return autoSave() ? save() : this;
       }
       for(int i = 0; i < paths.length; i++) {
          String lastKey = paths[i];
@@ -91,40 +206,31 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
             start.set(lastKey, value);
          }else {
             if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
-               start.set(lastKey,new DynamicYamlConfigurationSectionImpl(configuration,lastKey,new LinkedHashMap<>()));
+               start.set(lastKey,new DynamicJsonConfigurationSection(this,lastKey,new LinkedHashMap<>()));
             start = (IDynamicConfigurationSection) start.get(lastKey);
          }
       }
-      lastPath = path;
-      return configuration.autoSave() ? save() : this;
+      return autoSave() ? save() : this;
    }
 
    @Override
    public IDynamicConfigurationSection set(String path, Object value, String comment) {
-      if(!comment.isEmpty())
-         configuration.COMMENTS.put(id() + "." + path,"#" + comment);
-      return set(path,value);
+      throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
    @Override
    public IDynamicConfigurationSection setInline(String path, Object value, String comment) {
-      if(!comment.isEmpty())
-         configuration.INLINE_COMMENTS.put(id() + "." + path,"#" + comment);
-      return set(path,value);
+      throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
    @Override
    public IDynamicConfigurationSection comment(String... comment) {
-      if(!String.join("\n#",comment).isEmpty())
-         configuration.COMMENTS.put(id() + "." + lastPath, "#" + String.join("\n#",comment));
-      return this;
+      throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
    @Override
    public IDynamicConfigurationSection inlineComment(String... comment) {
-      if(!String.join("\n#",comment).isEmpty())
-         configuration.INLINE_COMMENTS.put(id() + "." + lastPath, "#" + String.join("\n#",comment));
-      return this;
+      throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
    @Override
@@ -155,16 +261,13 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    @Override
    public IDynamicConfigurationSection createSection(String path) {
       IDynamicConfigurationSection sec = getSection(path);
-      if(sec == null)
-         set(path,sec = new DynamicYamlConfigurationSectionImpl(configuration,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new LinkedHashMap<>()));
+      if(sec == null) set(path,sec = new DynamicJsonConfigurationSection(this,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new LinkedHashMap<>()));
       return sec;
    }
 
    @Override
    public IDynamicConfigurationSection createSection(String path, String comment) {
-      if(!comment.isEmpty())
-         configuration.INLINE_COMMENTS.put(id() + "." + path,"#" + comment);
-      return createSection(path);
+      throw new UnsupportedOperationException("Comments are not supported in json files");
    }
 
    @Override
@@ -189,7 +292,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
       Double f = defaultValue;
       if(!(value instanceof Double) && value!=null)
          try {f = Double.parseDouble(value.toString());
-         }catch (Exception ignored) {}
+         }catch (Exception e) {}
       return !(value instanceof Double) ? (value != null ? f : defaultValue) : (Double) value;
    }
 
