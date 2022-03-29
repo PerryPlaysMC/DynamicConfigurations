@@ -1,7 +1,6 @@
 package dev.perryplaysmc.dynamicconfigurations.utils;
 
 import dev.perryplaysmc.dynamicconfigurations.IDynamicConfiguration;
-import org.yaml.snakeyaml.DumperOptions;
 
 /**
  * Creator: PerryPlaysMC
@@ -68,7 +67,7 @@ public class DynamicConfigurationOptions {
    }
 
 
-   public IDynamicConfiguration finish() {
+   public IDynamicConfiguration configuration() {
       return parentConfiguration;
    }
 

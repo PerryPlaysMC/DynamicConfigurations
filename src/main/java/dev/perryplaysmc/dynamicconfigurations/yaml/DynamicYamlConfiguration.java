@@ -158,7 +158,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
       if(directory!=null&&!directory.isDirectory())directory.mkdirs();
       try {
          if(rsc == null) file.createNewFile();
-         else DynamicConfigurationManager.writeFile(rsc,file);
+         else FileUtils.writeFile(rsc,file);
       } catch (IOException e) {
          e.printStackTrace();
       }
