@@ -1,5 +1,9 @@
 package dev.perryplaysmc.dynamicconfigurations;
 
+import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationDirectory;
+import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import java.io.File;
 import java.util.Map;
 
@@ -15,23 +19,21 @@ public interface IDynamicConfiguration extends IDynamicConfigurationSection {
 
    File directory();
 
+   JavaPlugin plugin();
+
+   DynamicConfigurationOptions options();
+
    DynamicConfigurationDirectory configurationDirectory();
 
    IDynamicConfiguration configurationDirectory(DynamicConfigurationDirectory directory);
 
    String name();
 
-   boolean autoSave();
-
    Map<String,String> comments();
 
    Map<String,String> inlineComments();
 
-   /**
-    * Should it save whenever it is edited
-    */
-   IDynamicConfiguration autoSave(boolean autoSave);
-
    IDynamicConfiguration regenerate();
 
+   String saveToString();
 }

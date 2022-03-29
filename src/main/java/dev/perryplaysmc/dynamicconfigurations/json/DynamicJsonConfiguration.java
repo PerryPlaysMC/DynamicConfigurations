@@ -1,10 +1,12 @@
 package dev.perryplaysmc.dynamicconfigurations.json;
 
 import com.google.gson.*;
-import dev.perryplaysmc.dynamicconfigurations.DynamicConfigurationDirectory;
-import dev.perryplaysmc.dynamicconfigurations.DynamicConfigurationManager;
-import dev.perryplaysmc.dynamicconfigurations.IDynamicConfiguration;
-import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationSection;
+import com.google.gson.stream.JsonWriter;
+import dev.perryplaysmc.dynamicconfigurations.*;
+import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationDirectory;
+import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
+import dev.perryplaysmc.dynamicconfigurations.utils.FileUtils;
+import dev.perryplaysmc.dynamicconfigurations.yaml.DynamicYamlConfigurationSectionImpl;
 import org.apache.commons.lang.Validate;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -21,11 +23,12 @@ import java.util.stream.Collectors;
 public class DynamicJsonConfiguration implements IDynamicConfiguration {
    private Map<String, Object> data = new LinkedHashMap<>();
 
-   private final File file;
    private File directory;
+   private boolean isGhost = false;
+   private final File file;
    private final JavaPlugin plugin;
-   private boolean autoSave = false;
-   private final Supplier<InputStream> stream;
+   private final DynamicConfigurationOptions options;
+   private Supplier<InputStream> stream;
    private DynamicConfigurationDirectory configurationDirectory = null;
 
    private final DynamicJsonAdapter adapter = new DynamicJsonAdapter(this);
@@ -34,13 +37,19 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    public DynamicJsonConfiguration(JavaPlugin plugin, File directory, String name) {
       Validate.notNull(plugin);
       this.plugin = plugin;
-      if(directory != null)
-         this.directory = directory;
-      else if(name.contains("/"))
-         this.directory = new File(name.substring(0,name.lastIndexOf('/')));
-      else this.directory = new File("plugins/" + plugin.getName());
-      if(name.contains("/")) name = name.substring(name.lastIndexOf('/')+1);
-      this.file = new File(this.directory, (name.endsWith(".json") ? name : name + ".json"));
+      if(directory == null) {
+         if(name.contains("/")) directory = new File(name.substring(0, name.lastIndexOf('/')));
+         else directory = new File("plugins/" + plugin.getName());
+      }
+      if(name.contains("/")) {
+         String dir = name.substring(0, name.lastIndexOf('/'));
+         if(!directory.getPath().endsWith(dir))
+            directory = new File(directory, dir);
+         name = name.substring(name.lastIndexOf('/') + 1);
+      }
+      this.options = new DynamicConfigurationOptions(this);
+      this.directory = directory;
+      this.file = new File(directory, name + (!name.endsWith(".json") ? ".json" : ""));
       if(!this.file.exists()) regenerate();
       this.stream = null;
       reload();
@@ -49,17 +58,16 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
       this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
    }
-   public DynamicJsonConfiguration(JavaPlugin plugin, Supplier<InputStream> stream) {
-      Validate.notNull(plugin);
-      this.plugin = plugin;
-      this.directory = null;
-      this.file = null;
-      this.stream = stream;
-      reload();
-   }
+
    public DynamicJsonConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
       this(plugin,directory.directory().getPath(),name);
       this.configurationDirectory = directory;
+   }
+
+   public DynamicJsonConfiguration(JavaPlugin plugin, Supplier<InputStream> inputStream, String name) {
+      this(plugin, "", name);
+      this.isGhost = true;
+      this.stream = inputStream;
    }
 
    @Override
@@ -84,6 +92,16 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    }
 
    @Override
+   public String fullPath() {
+      return "";
+   }
+
+   @Override
+   public IDynamicConfigurationSection parent() {
+      return null;
+   }
+
+   @Override
    public Map<String, Object> data() {
       return data;
    }
@@ -99,13 +117,18 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    }
 
    @Override
-   public String name() {
-      return file.getName();
+   public JavaPlugin plugin() {
+      return plugin;
    }
 
    @Override
-   public boolean autoSave() {
-      return autoSave;
+   public DynamicConfigurationOptions options() {
+      return options;
+   }
+
+   @Override
+   public String name() {
+      return file.getName();
    }
 
    @Override
@@ -119,23 +142,19 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    }
 
    @Override
-   public IDynamicConfiguration autoSave(boolean autoSave) {
-      this.autoSave = autoSave;
-      return this;
-   }
-
-   @Override
    public IDynamicConfiguration regenerate() {
-      if(stream != null) {
-         return reload();
-      }
+      if(isGhost) return reload();
+
       if(this.file.exists()) this.file.delete();
       InputStream rsc = plugin.getResource(name());
       if(rsc == null) rsc = plugin.getResource((directory!=null?(directory.getPath().endsWith("/")|| name().startsWith("/") ? directory.getPath() :directory.getPath()+"/"):"")+ name());
       if(directory!=null&&!directory.isDirectory())directory.mkdirs();
       try {
          if(rsc == null) file.createNewFile();
-         else DynamicConfigurationManager.writeFile(rsc,file);
+         else {
+            FileUtils.writeFile(rsc,file);
+            reload();
+         }
       } catch (IOException e) {
          e.printStackTrace();
       }
@@ -143,17 +162,37 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    }
 
    @Override
+   public String saveToString() {
+      final Gson gsonPrettyPrinting = new GsonBuilder().setPrettyPrinting().create();
+      try (final StringWriter pWriter = new StringWriter()) {
+         final JsonWriter jWriter = gsonPrettyPrinting.newJsonWriter(pWriter);
+         StringBuilder indent = new StringBuilder();
+         for(int i = 0; i < options.indent(); i++) indent.append(" ");
+         jWriter.setIndent(indent.toString());
+         gsonPrettyPrinting.toJson(GSON.toJsonTree(data), jWriter);
+         return pWriter.toString();
+      } catch (final IOException ignored) {}
+      return GSON.toJson(data);
+   }
+
+   @Override
    public IDynamicConfiguration save() {
-      if(stream != null) return this;
-      DynamicConfigurationManager.writeFile(Collections.singletonList(GSON.toJson(data)), file);
+      if(isGhost) return this;
+      if(options().appendMissingKeys() && DynamicConfigurationManager.isMissingKeys(this, stream)) {
+         DynamicConfigurationManager.appendMissingKeysFrom(stream,this);
+      }
+      FileUtils.writeFile(Collections.singletonList(saveToString()), file);
       return this;
    }
    @Override
    public IDynamicConfiguration reload() {
       try {
-         if(stream != null)
+         if(isGhost)
             data = (Map<String, Object>) GSON.fromJson(new InputStreamReader(stream.get()), Map.class);
-         else data = (Map<String, Object>) GSON.fromJson(new FileReader(file), Map.class);
+         else {
+            if(!this.file.exists())regenerate();
+            data = (Map<String, Object>) GSON.fromJson(new FileReader(file), Map.class);
+         }
       } catch (FileNotFoundException e) {
          e.printStackTrace();
       }
@@ -198,19 +237,21 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
       if(paths.length == 1) {
          if(value == null) data.remove(paths[0]);
          else data.put(paths[0],value);
-         return autoSave() ? save() : this;
+         return options.autoSave() ? save() : this;
       }
       for(int i = 0; i < paths.length; i++) {
          String lastKey = paths[i];
          if(i == paths.length-1) {
+            if(value instanceof DynamicYamlConfigurationSectionImpl && start != this)
+               ((DynamicYamlConfigurationSectionImpl)value).parent(start);
             start.set(lastKey, value);
          }else {
             if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
-               start.set(lastKey,new DynamicJsonConfigurationSection(this,lastKey,new LinkedHashMap<>()));
+               start.set(lastKey,new DynamicJsonConfigurationSection(this,start==this?null:start,lastKey,new LinkedHashMap<>()));
             start = (IDynamicConfigurationSection) start.get(lastKey);
          }
       }
-      return autoSave() ? save() : this;
+      return options.autoSave() ? save() : this;
    }
 
    @Override
@@ -238,12 +279,17 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
       if(path.contains(".")) {
          String[] split = path.split("\\.");
          IDynamicConfigurationSection deep = this;
-         for(String s : split) {
-            if(deep.get(s) != null)
-               if(deep.get(s) instanceof IDynamicConfigurationSection) deep = (IDynamicConfigurationSection) deep.get(s);
-               else if(!(deep.get(s) instanceof IDynamicConfigurationSection)) return deep.get(s);
+         int indexes = 0;
+         for(int i = 0, splitLength = split.length; i < splitLength; i++) {
+            String key = split[i];
+            Object val = (deep == this) ? deep.data().get(key) : deep.get(key);
+            if(val != null) {
+               if(val instanceof IDynamicConfigurationSection) deep = (IDynamicConfigurationSection) val;
+               if(i == splitLength-1) return val;
+            } else break;
+            indexes = i;
          }
-         return data.getOrDefault(path, deep != this ? deep : null);
+         return data.getOrDefault(path, deep != this&&indexes==split.length-1 ? deep : null);
       }
       return data.getOrDefault(path, null);
    }

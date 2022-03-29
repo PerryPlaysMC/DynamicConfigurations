@@ -1,8 +1,6 @@
 package dev.perryplaysmc.dynamicconfigurations;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Creator: PerryPlaysMC
@@ -12,6 +10,10 @@ import java.util.Set;
 public interface IDynamicConfigurationSection {
 
    String id();
+
+   String fullPath();
+
+   IDynamicConfigurationSection parent();
 
    Map<String, Object> data();
 
@@ -320,37 +322,47 @@ public interface IDynamicConfigurationSection {
 
 
    default String asString() {
-      String res = (id().isEmpty() ? "" : id() + ": ")+"{\n";
+      List<String> lines = new ArrayList<>();
+      lines.add((id().isEmpty() ? "" : id() + ": ")+"{");
       for(Map.Entry<String, Object> key_val : data().entrySet()) {
          String key = key_val.getKey();
          Object val = key_val.getValue();
-         res+=(res.length()>2?",\n":"")+(indent(1))+key+": ";
-         if(val instanceof Map)
-            res+=fromMap(2,(Map<?, ?>) val);
-         if(val instanceof IDynamicConfigurationSection)
-            res+=fromMap(2,((IDynamicConfigurationSection) val).data());
-         else res+=val;
+         if(lines.size() > 2)
+            lines.set(lines.size()-1,lines.get(lines.size()-1) + ",");
+         String text = indent(1)+key+": ";
+         if(val instanceof Map) text +=fromMap(2,(Map<?, ?>) val);
+         else if(val instanceof IDynamicConfigurationSection) text +=fromMap(2,((IDynamicConfigurationSection) val).data());
+         else if(val instanceof Object[]) text += Arrays.toString((Object[]) val);
+         else text += val;
+         lines.add(text);
       }
-      return res + (res.length() > 2 ? "\n}" : "}");
+      lines.add("}");
+      return String.join("\n",lines);
    }
 
    default String fromMap(int indent, Map<?,?> objects) {
-      String res = "{\n";
+      List<String> lines = new ArrayList<>();
+      lines.add("{");
       for(Map.Entry<?, ?> key_val : objects.entrySet()) {
          Object key = key_val.getKey();
          Object val = key_val.getValue();
-         res+=(res.length()>2?",\n":"")+indent(indent)+key+": ";
-         if(val instanceof Map) res+=fromMap(indent+1,(Map<?, ?>) val);
-         if(val instanceof IDynamicConfigurationSection) res+=fromMap(indent+1,((IDynamicConfigurationSection) val).data());
-         else res+=val;
+         if(lines.size() > 2)
+            lines.set(lines.size()-1,lines.get(lines.size()-1) + ",");
+         String text = indent(indent)+key+": ";
+         if(val instanceof Map) text += fromMap(indent+1,(Map<?, ?>) val);
+         else if(val instanceof IDynamicConfigurationSection) text+=fromMap(indent+1,((IDynamicConfigurationSection) val).data());
+         else if(val instanceof Object[]) text += Arrays.toString((Object[]) val);
+         else text += val;
+         lines.add(String.join("\n"+indent(indent), text.split("\n")));
       }
-      return res + (res.length() > 2 ? "\n"+indent(indent-1) +  "}" : "}");
+      lines.add(indent(indent-1)+"}");
+      return String.join("\n",lines);
    }
 
    default String indent(int indents) {
-      String res = "";
-      for(int i = 0; i < indents; i++)res+=" ";
-      return res;
+      StringBuilder res = new StringBuilder();
+      for(int i = 0; i < indents; i++) res.append(" ");
+      return res.toString();
    }
 
 

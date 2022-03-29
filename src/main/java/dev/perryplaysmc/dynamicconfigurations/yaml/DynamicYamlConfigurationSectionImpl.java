@@ -1,6 +1,8 @@
 package dev.perryplaysmc.dynamicconfigurations.yaml;
 
+import dev.perryplaysmc.dynamicconfigurations.IDynamicConfiguration;
 import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationSection;
+import dev.perryplaysmc.dynamicconfigurations.json.DynamicJsonConfiguration;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -13,16 +15,45 @@ import java.util.stream.Collectors;
 public class DynamicYamlConfigurationSectionImpl implements IDynamicConfigurationSection {
 
    private final DynamicYamlConfiguration configuration;
+   private IDynamicConfigurationSection parent;
    private final String id;
    private final Map<String, Object> data;
+   private final String fullPath;
    private String lastPath = "";
 
    protected DynamicYamlConfigurationSectionImpl(DynamicYamlConfiguration configuration, String id, Map<String, Object> data) {
-      this.configuration = configuration;
-      this.id = id;
-      this.data = data;
+      this(configuration,null,id,data);
    }
 
+   protected DynamicYamlConfigurationSectionImpl(DynamicYamlConfiguration configuration, IDynamicConfigurationSection parent, String id, Map<String, Object> data) {
+      this.configuration = configuration;
+      this.parent = parent;
+      this.id = id;
+      this.data = data;
+      if(parent!=null) {
+         StringBuilder fullPath = new StringBuilder(id());
+         while(parent != null) {
+            fullPath.insert(0, parent.id() + ".");
+            parent = parent.parent();
+         }
+         this.fullPath = fullPath.toString();
+      }else this.fullPath = "";
+   }
+
+
+   @Override
+   public String fullPath() {
+      return fullPath;
+   }
+
+   public IDynamicConfigurationSection parent() {
+      return parent;
+   }
+
+   public IDynamicConfigurationSection parent(IDynamicConfigurationSection parent) {
+      this.parent = parent;
+      return this;
+   }
 
    @Override
    public String id() {
@@ -83,47 +114,49 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
       if(paths.length == 1) {
          if(value == null) data.remove(paths[0]);
          else data.put(paths[0],value);
-         return configuration.autoSave() ? save() : this;
+         return configuration.options().autoSave() ? save() : this;
       }
       for(int i = 0; i < paths.length; i++) {
          String lastKey = paths[i];
          if(i == paths.length-1) {
+            if(value instanceof DynamicYamlConfigurationSectionImpl && start != this)
+               ((DynamicYamlConfigurationSectionImpl)value).parent(start);
             start.set(lastKey, value);
          }else {
             if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
-               start.set(lastKey,new DynamicYamlConfigurationSectionImpl(configuration,lastKey,new LinkedHashMap<>()));
+               start.set(lastKey,new DynamicYamlConfigurationSectionImpl(configuration,start==this?null:start,lastKey,new LinkedHashMap<>()));
             start = (IDynamicConfigurationSection) start.get(lastKey);
          }
       }
       lastPath = path;
-      return configuration.autoSave() ? save() : this;
+      return configuration.options().autoSave() ? save() : this;
    }
 
    @Override
    public IDynamicConfigurationSection set(String path, Object value, String comment) {
       if(!comment.isEmpty())
-         configuration.COMMENTS.put(id() + "." + path,"#" + comment);
+         configuration.COMMENTS.put(fullPath() + "." + path,"#" + comment);
       return set(path,value);
    }
 
    @Override
    public IDynamicConfigurationSection setInline(String path, Object value, String comment) {
       if(!comment.isEmpty())
-         configuration.INLINE_COMMENTS.put(id() + "." + path,"#" + comment);
+         configuration.INLINE_COMMENTS.put(fullPath() + "." + path,"#" + comment);
       return set(path,value);
    }
 
    @Override
    public IDynamicConfigurationSection comment(String... comment) {
       if(!String.join("\n#",comment).isEmpty())
-         configuration.COMMENTS.put(id() + "." + lastPath, "#" + String.join("\n#",comment));
+         configuration.COMMENTS.put(fullPath() + "." + lastPath, "#" + String.join("\n#",comment));
       return this;
    }
 
    @Override
    public IDynamicConfigurationSection inlineComment(String... comment) {
       if(!String.join("\n#",comment).isEmpty())
-         configuration.INLINE_COMMENTS.put(id() + "." + lastPath, "#" + String.join("\n#",comment));
+         configuration.INLINE_COMMENTS.put(fullPath() + "." + lastPath, "#" + String.join("\n#",comment));
       return this;
    }
 
@@ -132,12 +165,17 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
       if(path.contains(".")) {
          String[] split = path.split("\\.");
          IDynamicConfigurationSection deep = this;
-         for(String s : split) {
-            if(deep.get(s) != null)
-               if(deep.get(s) instanceof IDynamicConfigurationSection) deep = (IDynamicConfigurationSection) deep.get(s);
-               else if(!(deep.get(s) instanceof IDynamicConfigurationSection)) return deep.get(s);
+         int indexes = 0;
+         for(int i = 0, splitLength = split.length; i < splitLength; i++) {
+            String key = split[i];
+            Object val = (deep == this) ? deep.data().get(key) : deep.get(key);
+            if(val != null) {
+               if(val instanceof IDynamicConfigurationSection) deep = (IDynamicConfigurationSection) val;
+               if(i == splitLength-1) return val;
+            } else break;
+            indexes = i;
          }
-         return data.getOrDefault(path, deep != this ? deep : null);
+         return data.getOrDefault(path, deep != this&&indexes==split.length-1 ? deep : null);
       }
       return data.getOrDefault(path, null);
    }
@@ -156,14 +194,14 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
    public IDynamicConfigurationSection createSection(String path) {
       IDynamicConfigurationSection sec = getSection(path);
       if(sec == null)
-         set(path,sec = new DynamicYamlConfigurationSectionImpl(configuration,path.contains(".") ? path.substring(path.lastIndexOf('.')) : path, new LinkedHashMap<>()));
+         set(path,sec = new DynamicYamlConfigurationSectionImpl(configuration,path.contains(".") ? path.substring(path.lastIndexOf('.')+1) : path, new LinkedHashMap<>()));
       return sec;
    }
 
    @Override
    public IDynamicConfigurationSection createSection(String path, String comment) {
       if(!comment.isEmpty())
-         configuration.INLINE_COMMENTS.put(id() + "." + path,"#" + comment);
+         configuration.INLINE_COMMENTS.put(fullPath() + "." + path,"#" + comment);
       return createSection(path);
    }
 

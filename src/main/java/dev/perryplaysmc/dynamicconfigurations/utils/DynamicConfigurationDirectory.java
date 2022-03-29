@@ -1,5 +1,7 @@
-package dev.perryplaysmc.dynamicconfigurations;
+package dev.perryplaysmc.dynamicconfigurations.utils;
 
+import dev.perryplaysmc.dynamicconfigurations.DynamicConfigurationManager;
+import dev.perryplaysmc.dynamicconfigurations.IDynamicConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -34,8 +36,7 @@ public class DynamicConfigurationDirectory {
    }
 
    public DynamicConfigurationDirectory reload() {
-      for(IDynamicConfiguration configuration : configurations)
-         configuration.reload();
+      for(IDynamicConfiguration configuration : configurations) configuration.reload();
       configurations.clear();
       subDirectories.clear();
       if(!directory.isDirectory())directory.mkdirs();
@@ -73,8 +74,7 @@ public class DynamicConfigurationDirectory {
          String[] split = name.split("/");
          for(int i = 0; i < split.length - 1; i++) {
             String s = split[i];
-            if(!s.isEmpty())
-               dir = dir.getOrCreateSubDirectory(s);
+            if(!s.isEmpty()) dir = (dir.allowsSubDirectories() ? dir : this).getOrCreateSubDirectory(s);
          }
          return dir.getConfiguration(name);
       }else {
