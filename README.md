@@ -15,18 +15,20 @@ directory.reload();
 {
    IDynamicConfiguration json =
       DynamicConfigurationManager.createConfiguration(this, "plugins/Example/example.json")
-         .autoSave(true);
+         .options().autoSave(true).configuration();
    json.set("array", new String[]{"a","b","c"})
       .set("list", Arrays.asList("d","e","f"))
       .set("string", "h\ni\nj");
 }
 {
-   IDynamicConfiguration yml =
-      DynamicConfigurationManager.createConfiguration(this, "plugins/Example/example.yml")
-         .autoSave(true);
+   IDynamicConfiguration ghost = DynamicConfigurationManager.createGhostConfiguration(this, "example.yml");
+   IDynamicConfiguration yml = DynamicConfigurationManager.createConfiguration(this, "plugins/Example/example.yml")
+         .options().autoSave(true).appendMissingKeys(true).configuration();
    yml.set("array", new String[]{"a","b","c"})
-      .setInline("list", Arrays.asList("d","e","f"), "Inline comment!")
-      .set("string", "h\ni\nj", "above comment!");
+      .set("list", Arrays.asList("d","e","f"))
+      .setInline("list2.list", Arrays.asList("g","h","i"), "Inline comment")
+      .set("string", "h\ni\nj", "test comment")
+      .set("string2.test", "h\ni\nj", "test comment :D");
 }
 ```
 
@@ -42,7 +44,7 @@ directory.reload();
 <dependency>
    <groupId>com.github.PerryPlaysMC</groupId>
    <artifactId>DynamicConfigurations</artifactId>
-   <version>v1.2.7</version>
+   <version>v1.3.0</version>
 </dependency>
 ```
 [![](https://jitpack.io/v/PerryPlaysMC/DynamicConfigurations.svg)](https://jitpack.io/#PerryPlaysMC/DynamicConfigurations)
