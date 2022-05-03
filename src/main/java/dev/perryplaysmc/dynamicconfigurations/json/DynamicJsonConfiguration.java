@@ -47,11 +47,12 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
             directory = new File(directory, dir);
          name = name.substring(name.lastIndexOf('/') + 1);
       }
-      this.options = new DynamicConfigurationOptions(this);
       this.directory = directory;
       this.file = new File(directory, name + (!name.endsWith(".json") ? ".json" : ""));
       if(!this.file.exists()) regenerate();
-      this.stream = null;
+      this.stream = () -> FileUtils.findStream(plugin, file);
+      this.options = new DynamicConfigurationOptions(this);
+      this.configurationDirectory = DynamicConfigurationManager.getConfigurationDirectory(directory);
       reload();
       adapter.gson(GSON);
    }

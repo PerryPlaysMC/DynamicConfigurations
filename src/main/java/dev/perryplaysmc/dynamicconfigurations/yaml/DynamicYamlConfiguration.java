@@ -7,6 +7,7 @@ import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
 import dev.perryplaysmc.dynamicconfigurations.utils.FileUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -179,8 +180,9 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
             DynamicConfigurationManager.appendMissingKeysFrom(stream,this);
          }
          yaml.options().indent(options.indent());
-         yaml.set(".",null);
-         toBukkit(this,yaml);
+        try { yaml.loadFromString("");
+        } catch (InvalidConfigurationException ignored) {}
+        toBukkit(this,yaml);
          BufferedWriter writer = new BufferedWriter(new FileWriter(file));
          writer.write(FileUtils.pasteConfig(this, options(), COMMENTS, INLINE_COMMENTS));
          writer.flush();
