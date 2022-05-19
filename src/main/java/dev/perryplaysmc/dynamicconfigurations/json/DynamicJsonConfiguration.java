@@ -436,7 +436,8 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<String> getListString(String path, List<String> defaultValue) {
       List<?> value = getList(path, null);
-      return value == null ? defaultValue : (List<String>) value;
+      if (value == null) return defaultValue;
+      return (value.isEmpty() || value.stream().allMatch(o -> o instanceof String)) ? (List<String>) value : value.stream().map(Object::toString).collect(Collectors.toList());
    }
 
    @Override
@@ -447,7 +448,12 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<Double> getListDouble(String path, List<Double> defaultValue) {
       List<?> value = getList(path, null);
-      return value == null ? defaultValue : (List<Double>) value;
+      if (value == null) return defaultValue;
+      return (value.isEmpty() || value.stream().allMatch(o -> o instanceof Double)) ? (List<Double>) value : value.stream().mapToDouble(o -> {
+         if (o instanceof Number) return ((Number) o).doubleValue();
+         try {if (o instanceof String) return Integer.parseInt(value.toString());}catch (Exception ignored) {}
+         return 0;
+      }).boxed().collect(Collectors.toList());
    }
 
    @Override
@@ -458,7 +464,12 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<Integer> getListInteger(String path, List<Integer> defaultValue) {
       List<?> value = getList(path, null);
-      return value == null ? defaultValue : (List<Integer>) value;
+      if (value == null) return defaultValue;
+      return (value.isEmpty() || value.stream().allMatch(o -> o instanceof Integer)) ? (List<Integer>) value : value.stream().mapToInt(o -> {
+         if (o instanceof Number) return ((Number) o).intValue();
+         try {if (o instanceof String) return Integer.parseInt(o.toString());}catch (Exception ignored) {}
+         return 0;
+      }).boxed().collect(Collectors.toList());
    }
 
    @Override
@@ -469,7 +480,12 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<Float> getListFloat(String path, List<Float> defaultValue) {
       List<?> value = getList(path, null);
-      return value == null ? defaultValue : (List<Float>) value;
+      if (value == null) return defaultValue;
+      return (value.isEmpty() || value.stream().allMatch(o -> o instanceof Float)) ? (List<Float>) value : value.stream().mapToDouble(o -> {
+         if (o instanceof Number) return ((Number) o).floatValue();
+         try {if (o instanceof String) return Float.parseFloat(o.toString());}catch (Exception ignored) {}
+         return 0;
+      }).boxed().map(d -> (float) (double) d).collect(Collectors.toList());
    }
 
    @Override
@@ -480,7 +496,12 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<Byte> getListByte(String path, List<Byte> defaultValue) {
       List<?> value = getList(path, null);
-      return value == null ? defaultValue : (List<Byte>) value;
+      if (value == null) return defaultValue;
+      return (value.isEmpty() || value.stream().allMatch(o -> o instanceof Byte)) ? (List<Byte>) value : value.stream().mapToInt(o -> {
+         if (o instanceof Number) return ((Number) o).byteValue();
+         try {if (o instanceof String) return Byte.parseByte(o.toString());}catch (Exception ignored) {}
+         return 0;
+      }).boxed().map(d -> (byte) (int) d).collect(Collectors.toList());
    }
 
    @Override
@@ -491,7 +512,11 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    @Override
    public List<Boolean> getListBoolean(String path, List<Boolean> defaultValue) {
       List<?> value = getList(path, null);
-      return value == null ? defaultValue : (List<Boolean>) value;
+      if (value == null) return defaultValue;
+      return (value.isEmpty() || value.stream().allMatch(o -> o instanceof Boolean)) ? (List<Boolean>) value : value.stream().map(o -> {
+         if (o instanceof String) return Boolean.parseBoolean(o.toString());
+         return false;
+      }).collect(Collectors.toList());
    }
 
    @Override
