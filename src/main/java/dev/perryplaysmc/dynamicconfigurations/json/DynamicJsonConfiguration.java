@@ -39,7 +39,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
       this.plugin = plugin;
       if(directory == null) {
          if(name.contains("/")) directory = new File(name.substring(0, name.lastIndexOf('/')));
-         else directory = new File("plugins/" + plugin.getName());
+         else directory = plugin.getDataFolder();
       }
       if(name.contains("/")) {
          String dir = name.substring(0, name.lastIndexOf('/'));
