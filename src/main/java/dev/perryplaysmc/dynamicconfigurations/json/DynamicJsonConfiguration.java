@@ -56,6 +56,11 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
       reload();
       adapter.gson(GSON);
    }
+
+   public DynamicJsonConfiguration(JavaPlugin plugin, String name) {
+      this(plugin, (File) null, name);
+   }
+
    public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
       this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
    }
@@ -66,7 +71,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
    }
 
    public DynamicJsonConfiguration(JavaPlugin plugin, Supplier<InputStream> inputStream, String name) {
-      this(plugin, "", name);
+      this(plugin, name);
       this.isGhost = true;
       this.stream = inputStream;
    }
