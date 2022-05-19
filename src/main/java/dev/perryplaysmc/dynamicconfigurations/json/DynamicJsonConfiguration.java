@@ -338,14 +338,13 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
       Object value = get(path);
       Double f = defaultValue;
       if(!(value instanceof Double) && value!=null)
-         try {f = Double.parseDouble(value.toString());
-         }catch (Exception e) {}
+         try {f = Double.parseDouble(value.toString());}catch (Exception ignored) {}
       return !(value instanceof Double) ? (value != null ? f : defaultValue) : (Double) value;
    }
 
    @Override
    public Integer getInteger(String path) {
-      return null;
+      return getInteger(path, 0);
    }
 
    @Override
@@ -353,8 +352,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
       Object value = get(path);
       Integer f = defaultValue;
       if(!(value instanceof Integer) && value!=null)
-         try {f = Integer.parseInt(value.toString());
-         }catch (Exception e) {}
+         try {f = Integer.parseInt(value.toString());}catch (Exception ignored) {}
       return !(value instanceof Integer) ? (value != null ? f : defaultValue) : (Integer) value;
    }
 
@@ -368,8 +366,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
       Object value = get(path);
       Float f = defaultValue;
       if(!(value instanceof Float) && value!=null)
-         try {f = Float.parseFloat(value.toString());
-         }catch (Exception e) {}
+         try {f = Float.parseFloat(value.toString());}catch (Exception ignored) {}
       return !(value instanceof Float) ? (value != null ? f : defaultValue) : (Float) value;
    }
 
@@ -383,8 +380,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
       Object value = get(path);
       Byte f = defaultValue;
       if(!(value instanceof Byte) && value!=null)
-         try {f = Byte.parseByte(value.toString());
-         }catch (Exception e) {}
+         try {f = Byte.parseByte(value.toString());}catch (Exception ignored) {}
       return !(value instanceof Byte) ? (value != null ? f : defaultValue) : (Byte) value;
    }
 
@@ -398,8 +394,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
       Object value = get(path);
       Boolean f = defaultValue;
       if(!(value instanceof Boolean) && value!=null)
-         try {f = Boolean.parseBoolean(value.toString());
-         }catch (Exception e) {}
+         try {f = Boolean.parseBoolean(value.toString());}catch (Exception ignored) {}
       return !(value instanceof Boolean) ? (value != null ? f : defaultValue) : (Boolean) value;
    }
 

@@ -426,7 +426,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
 
    @Override
    public Integer getInteger(String path) {
-      return null;
+      return getInteger(path, 0);
    }
 
    @Override
