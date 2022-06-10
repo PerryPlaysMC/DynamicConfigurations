@@ -5,6 +5,7 @@ import dev.perryplaysmc.dynamicconfigurations.*;
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationDirectory;
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
 import dev.perryplaysmc.dynamicconfigurations.utils.FileUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -38,7 +39,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
     this.plugin = plugin;
     if(directory == null) {
       if(name.contains("/")) directory = new File(name.substring(0, name.lastIndexOf('/')));
-      else directory = new File(plugin!=null?"plugins/" + plugin.getName():"");
+      else directory = new File(plugin!=null? plugin.getDataFolder()+"":"");
     }
     if(name.contains("/")) {
       String dir = name.substring(0, name.lastIndexOf('/'));
