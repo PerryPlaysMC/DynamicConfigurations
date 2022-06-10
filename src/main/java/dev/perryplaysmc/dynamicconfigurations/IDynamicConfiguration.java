@@ -15,25 +15,25 @@ import java.util.Map;
 
 public interface IDynamicConfiguration extends IDynamicConfigurationSection {
 
-   File file();
+  File file();
 
-   File directory();
+  File directory();
 
-   JavaPlugin plugin();
+  JavaPlugin plugin();
 
-   DynamicConfigurationOptions options();
+  DynamicConfigurationOptions options();
 
-   DynamicConfigurationDirectory configurationDirectory();
+  DynamicConfigurationDirectory configurationDirectory();
 
-   IDynamicConfiguration configurationDirectory(DynamicConfigurationDirectory directory);
+  IDynamicConfiguration configurationDirectory(DynamicConfigurationDirectory directory);
 
-   String name();
+  String name();
 
-   Map<String,String> comments();
+  Map<String, String> comments();
 
-   Map<String,String> inlineComments();
+  Map<String, String> inlineComments();
 
-   IDynamicConfiguration regenerate();
+  IDynamicConfiguration regenerate();
 
-   String saveToString();
+  String saveToString();
 }
