@@ -14,24 +14,24 @@ import java.util.Map;
  **/
 public class DynamicJsonAdapter extends TypeAdapter<DynamicJsonConfigurationSection> {
 
-   private Gson GSON;
-   private final DynamicJsonConfiguration configuration;
+  private final DynamicJsonConfiguration configuration;
+  private Gson GSON;
 
-   public void gson(Gson GSON) {
-      this.GSON = GSON;
-   }
+  public DynamicJsonAdapter(DynamicJsonConfiguration configuration) {
+    this.configuration = configuration;
+  }
 
-   public DynamicJsonAdapter(DynamicJsonConfiguration configuration) {
-      this.configuration = configuration;
-   }
+  public void gson(Gson GSON) {
+    this.GSON = GSON;
+  }
 
-   @Override
-   public void write(JsonWriter jsonWriter, DynamicJsonConfigurationSection iDynamicConfigurationSection) throws IOException {
-      jsonWriter.jsonValue(GSON.toJson(iDynamicConfigurationSection.data()).replace("\n","\n  "));
-   }
+  @Override
+  public void write(JsonWriter jsonWriter, DynamicJsonConfigurationSection iDynamicConfigurationSection) throws IOException {
+    jsonWriter.jsonValue(GSON.toJson(iDynamicConfigurationSection.data()).replace("\n", "\n  "));
+  }
 
-   @Override
-   public DynamicJsonConfigurationSection read(JsonReader jsonReader) throws IOException {
-      return new DynamicJsonConfigurationSection(configuration, jsonReader.nextName(),GSON.fromJson(jsonReader, Map.class));
-   }
+  @Override
+  public DynamicJsonConfigurationSection read(JsonReader jsonReader) throws IOException {
+    return new DynamicJsonConfigurationSection(configuration, jsonReader.nextName(), GSON.fromJson(jsonReader, Map.class));
+  }
 }
