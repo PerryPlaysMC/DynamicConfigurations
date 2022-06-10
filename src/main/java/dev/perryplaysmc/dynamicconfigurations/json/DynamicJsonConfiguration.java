@@ -8,7 +8,6 @@ import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationDirector
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
 import dev.perryplaysmc.dynamicconfigurations.utils.FileUtils;
 import dev.perryplaysmc.dynamicconfigurations.yaml.DynamicYamlConfigurationSectionImpl;
-import org.apache.commons.lang.Validate;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
@@ -34,11 +33,10 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   private DynamicConfigurationDirectory configurationDirectory = null;
 
   public DynamicJsonConfiguration(JavaPlugin plugin, File directory, String name) {
-    Validate.notNull(plugin);
     this.plugin = plugin;
     if(directory == null) {
       if(name.contains("/")) directory = new File(name.substring(0, name.lastIndexOf('/')));
-      else directory = new File("plugins/" + plugin.getName());
+      else directory = new File(plugin==null?"plugins/" + plugin.getName():"");
     }
     if(name.contains("/")) {
       String dir = name.substring(0, name.lastIndexOf('/'));
@@ -55,6 +53,10 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     reload();
     adapter.gson(GSON);
   }
+  public DynamicJsonConfiguration(String name) {
+    this(null, (File)null, name);
+  }
+
 
   public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
     this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
@@ -147,19 +149,18 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     if(isGhost) return reload();
 
     if(this.file.exists()) this.file.delete();
-    InputStream rsc = plugin.getResource(name());
-    if(rsc == null)
-      rsc = plugin.getResource((directory != null ? (directory.getPath().endsWith("/") || name().startsWith("/") ? directory.getPath() : directory.getPath() + "/") : "") + name());
+    InputStream rsc = plugin==null?null:plugin.getResource(name());
+    String dir = (directory != null ? (directory.getPath().endsWith("/") ?
+      directory.getPath() : directory.getPath() + "/") : "").replace(plugin==null?"":plugin.getDataFolder().getPath(), "");
+    if(rsc == null&&plugin!=null) rsc = plugin.getResource((dir.equals("/") ? "" : dir) + name());
     if(directory != null && !directory.isDirectory()) directory.mkdirs();
     try {
       if(rsc == null) file.createNewFile();
-      else {
-        FileUtils.writeFile(rsc, file);
-        reload();
-      }
+      else FileUtils.writeFile(rsc, file);
     } catch (IOException e) {
       e.printStackTrace();
     }
+    reload();
     return this;
   }
 
@@ -181,9 +182,10 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   @Override
   public IDynamicConfiguration save() {
     if(isGhost) return this;
-    if(options().appendMissingKeys() && DynamicConfigurationManager.isMissingKeys(this, stream)) {
-      DynamicConfigurationManager.appendMissingKeysFrom(stream, this);
-    }
+    if(stream!=null&&stream.get()!=null)
+      if(options().appendMissingKeys() && DynamicConfigurationManager.isMissingKeys(this, stream)) {
+        DynamicConfigurationManager.appendMissingKeysFrom(stream, this);
+      }
     FileUtils.writeFile(Collections.singletonList(saveToString()), file);
     return this;
   }

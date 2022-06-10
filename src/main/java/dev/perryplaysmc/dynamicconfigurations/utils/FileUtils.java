@@ -79,7 +79,7 @@ public class FileUtils {
     }
   }
 
-  public static String pasteConfig(IDynamicConfiguration configuration, DynamicConfigurationOptions options, Map<String, String> comments, Map<String, String> inlineComments) {
+  public static String generateNewConfigString(IDynamicConfiguration configuration, DynamicConfigurationOptions options, Map<String, String> comments, Map<String, String> inlineComments) {
     String configString = configuration.saveToString();
     List<String> pathList = new ArrayList<>();
     Pattern pattern = Pattern.compile("([^\\s:]+:)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
@@ -313,6 +313,7 @@ public class FileUtils {
 
 
   public static InputStream findStream(JavaPlugin plugin, File file) {
+    if(plugin==null)return null;
     String filePath = file.getPath();
     if(INPUTSTREAM_CACHE.containsKey(filePath)) return plugin.getResource(INPUTSTREAM_CACHE.get(filePath));
     if(plugin.getResource(file.getName()) != null) {

@@ -5,7 +5,6 @@ import dev.perryplaysmc.dynamicconfigurations.*;
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationDirectory;
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
 import dev.perryplaysmc.dynamicconfigurations.utils.FileUtils;
-import org.apache.commons.lang.Validate;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -36,11 +35,10 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
   private DynamicConfigurationDirectory configurationDirectory;
 
   public DynamicYamlConfiguration(JavaPlugin plugin, File directory, String name) {
-    Validate.notNull(plugin);
     this.plugin = plugin;
     if(directory == null) {
       if(name.contains("/")) directory = new File(name.substring(0, name.lastIndexOf('/')));
-      else directory = new File("plugins/" + plugin.getName());
+      else directory = new File(plugin!=null?"plugins/" + plugin.getName():"");
     }
     if(name.contains("/")) {
       String dir = name.substring(0, name.lastIndexOf('/'));
@@ -59,6 +57,10 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
 
   public DynamicYamlConfiguration(JavaPlugin plugin, String directory, String name) {
     this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
+  }
+
+  public DynamicYamlConfiguration(String name) {
+    this(null, (File)null, name);
   }
 
   public DynamicYamlConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
@@ -151,10 +153,10 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
     if(isGhost) return reload();
 
     if(this.file.exists()) this.file.delete();
-    InputStream rsc = plugin.getResource(name());
+    InputStream rsc = plugin==null?null:plugin.getResource(name());
     String dir = (directory != null ? (directory.getPath().endsWith("/") ?
-      directory.getPath() : directory.getPath() + "/") : "").replace(plugin.getDataFolder().getPath(), "");
-    if(rsc == null) rsc = plugin.getResource((dir.equals("/") ? "" : dir) + name());
+      directory.getPath() : directory.getPath() + "/") : "").replace(plugin==null?"":plugin.getDataFolder().getPath(), "");
+    if(rsc == null&&plugin!=null) rsc = plugin.getResource((dir.equals("/") ? "" : dir) + name());
     if(directory != null && !directory.isDirectory()) directory.mkdirs();
     try {
       if(rsc == null) file.createNewFile();
@@ -175,17 +177,14 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
   public IDynamicConfiguration save() {
     try {
       if(isGhost) return this;
-      if(options().appendMissingKeys() && DynamicConfigurationManager.isMissingKeys(this, stream)) {
-        DynamicConfigurationManager.appendMissingKeysFrom(stream, this);
-      }
+      if(stream!=null&&stream.get()!=null)
+        if(options().appendMissingKeys() && DynamicConfigurationManager.isMissingKeys(this, stream))
+          DynamicConfigurationManager.appendMissingKeysFrom(stream, this);
       yaml.options().indent(options.indent());
-      try {
-        yaml.loadFromString("");
-      } catch (InvalidConfigurationException ignored) {
-      }
+      try {yaml.loadFromString("");} catch (InvalidConfigurationException ignored) {}
       toBukkit(this, yaml);
       BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-      writer.write(FileUtils.pasteConfig(this, options(), COMMENTS, INLINE_COMMENTS));
+      writer.write(FileUtils.generateNewConfigString(this, options(), COMMENTS, INLINE_COMMENTS));
       writer.flush();
       writer.close();
     } catch (IOException e) {
