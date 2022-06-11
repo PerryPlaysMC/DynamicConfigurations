@@ -52,6 +52,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     this.configurationDirectory = DynamicConfigurationManager.getConfigurationDirectory(directory);
     reload();
     adapter.gson(GSON);
+    DynamicConfigurationManager.addConfiguration(this);
   }
   public DynamicJsonConfiguration(String name) {
     this(null, (File)null, name);
@@ -309,12 +310,12 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
 
 
   @Override
-  public Object get(Class<?> deserializeType, String path) {
-    if(!DynamicConfigurationManager.hasSerializer(deserializeType)) return get(path);
-    IDynamicConfigurationSerializer<Object> serializer = DynamicConfigurationManager.serializer(deserializeType);
+  public <T> T get(Class<T> deserializeType, String path) {
+    if(!DynamicConfigurationManager.hasSerializer(deserializeType)) return null;
+    IDynamicConfigurationSerializer<T> serializer = DynamicConfigurationManager.serializer(deserializeType);
     if(serializer instanceof IDynamicConfigurationStringSerializer)
-      return ((IDynamicConfigurationStringSerializer<Object>)serializer).deserialize(getString(path));
-    return serializer.deserialize(getSection(path) == null ? this : getSection(path));
+      return ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
+    return (T) serializer.deserialize(getSection(path) == null ? this : getSection(path));
   }
 
   @Override

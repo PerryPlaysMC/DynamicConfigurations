@@ -176,7 +176,7 @@ public class FileUtils {
       value.setLength(value.length()-1);
     if(value.charAt(value.length() - 1) != wrapWith) value.append(wrapWith);
     if(wrapWith == StringWrap.SINGLE_QUOTED.wrapWith())
-      value.replace(1,value.length()-1, value.substring(1,value.length()-1).replaceAll(("\\\\(')"),("$1")).replace(("'"), ("''")));
+      value.replace(1,value.length()-1, value.substring(1,value.length()-1).replaceAll(("'(')"),("$1")).replace(("'"), ("''")));
   }
 
   private static List<String> getLines(String text, Predicate<String> resetCondition, Predicate<String> concatCondition) {

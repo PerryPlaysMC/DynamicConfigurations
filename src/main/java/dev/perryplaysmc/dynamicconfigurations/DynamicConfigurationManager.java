@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 
 public class DynamicConfigurationManager {
 
-  private static final HashMap<Class<?>, IDynamicConfigurationSerializer<Object>> CONFIGURATION_SERIALIZER = new HashMap<>();
+  private static final HashMap<Class<?>, IDynamicConfigurationSerializer<?>> CONFIGURATION_SERIALIZER = new HashMap<>();
   private static final Set<IDynamicConfiguration> CONFIGURATIONS = new HashSet<>();
   private static final Set<DynamicConfigurationDirectory> CONFIGURATION_DIRECTORIES = new HashSet<>();
   private static final Map<String, ConfigCreate> CONFIG_EXTENSION_REGISTER = new HashMap<>();
@@ -42,37 +42,21 @@ public class DynamicConfigurationManager {
         return new DynamicJsonConfiguration(plugin, (Supplier<InputStream>) directory, name);
       return new DynamicJsonConfiguration(plugin, "", name);
     });
-    registerSerializer(new IDynamicConfigurationSerializer<ChatColor>() {
-      @Override
-      public Class<ChatColor> type() {
-        return ChatColor.class;
-      }
-
-      @Override
-      public void serialize(IDynamicConfigurationSection configuration, ChatColor color) {
-        configuration.set("color", color.name());
-      }
-
-      @Override
-      public ChatColor deserialize(IDynamicConfigurationSection configuration) {
-        return ChatColor.valueOf(configuration.getString("color"));
-      }
-    });
   }
 
   public static boolean hasSerializer(Class<?> deserializeType) {
     return CONFIGURATION_SERIALIZER.containsKey(deserializeType);
   }
 
-  public static IDynamicConfigurationSerializer<Object> serializer(Class<?> deserializeType) {
-    return CONFIGURATION_SERIALIZER.get(deserializeType);
+  public static <T> IDynamicConfigurationSerializer<T> serializer(Class<?> deserializeType) {
+    return (IDynamicConfigurationSerializer<T>) CONFIGURATION_SERIALIZER.get(deserializeType);
   }
 
   public static void registerExtension(String extension, ConfigCreate clazz) {
     CONFIG_EXTENSION_REGISTER.put((extension.startsWith(".") ? "" : ".") + extension, clazz);
   }
 
-  public static void registerSerializer(IDynamicConfigurationSerializer serializer) {
+  public static void registerSerializer(IDynamicConfigurationSerializer<?> serializer) {
     CONFIGURATION_SERIALIZER.put(serializer.type(), serializer);
   }
 

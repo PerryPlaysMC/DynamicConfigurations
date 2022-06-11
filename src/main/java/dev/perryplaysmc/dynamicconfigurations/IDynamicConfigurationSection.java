@@ -115,7 +115,7 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The object from the config, null if not set
    */
-  Object get(Class<?> deserializeType, String path);
+  <T> T get(Class<T> deserializeType, String path);
 
   /**
    * Get an Object from the config
@@ -124,9 +124,8 @@ public interface IDynamicConfigurationSection {
    * @param defaultValue If the path is not set, return defaultValue
    * @return The object from the config, defaultValue if not set
    */
-  default Object get(Class<?> deserializeType, String path, Object defaultValue) {
-    return get(deserializeType, path) == null ? defaultValue :
-      get(deserializeType, path);
+  default <T> T get(Class<T>  deserializeType, String path, T defaultValue) {
+    return get(deserializeType, path) == null ? defaultValue : get(deserializeType, path);
   }
 
   /**
