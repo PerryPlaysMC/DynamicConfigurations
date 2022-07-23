@@ -12,6 +12,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -216,10 +217,10 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
       };
     }
     try {
-      InputStream inputStream = file == null ? stream.get() : new FileInputStream(file);
+      InputStream inputStream = file == null ? stream.get() : Files.newInputStream(file.toPath());
       yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(inputStream));
       this.data = new LinkedHashMap<>();
-      inputStream = file == null ? stream.get() : new FileInputStream(file);
+      inputStream = file == null ? stream.get() : Files.newInputStream(file.toPath());
       fromBukkit(FileUtils.findKeys(inputStream), yaml, this);
     } catch (IOException e) {
       e.printStackTrace();
@@ -302,7 +303,11 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
         IDynamicConfigurationSerializer<Object> serializer = DynamicConfigurationManager.serializer(value.getClass());
         if(serializer instanceof IDynamicConfigurationStringSerializer)
           data.put(paths[0], ((IDynamicConfigurationStringSerializer<Object>) serializer).serialize(value));
-        else serializer.serialize(start, value);
+        else {
+          IDynamicConfigurationSection section = new DynamicYamlConfigurationSectionImpl(this, this, path, new HashMap<>());
+          data.put(path, section);
+          serializer.serialize(section, value);
+        }
         return options.autoSave() ? save() : this;
       }
       if(value == null) data.remove(paths[0]);

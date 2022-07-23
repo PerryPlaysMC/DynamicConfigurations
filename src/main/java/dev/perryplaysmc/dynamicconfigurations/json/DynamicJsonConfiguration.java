@@ -246,7 +246,11 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
         IDynamicConfigurationSerializer<Object> serializer = DynamicConfigurationManager.serializer(value.getClass());
         if(serializer instanceof IDynamicConfigurationStringSerializer)
           data.put(paths[0], ((IDynamicConfigurationStringSerializer<Object>) serializer).serialize(value));
-        else serializer.serialize(start,value);
+        else {
+          IDynamicConfigurationSection section = new DynamicJsonConfigurationSection(this, this, path, new HashMap<>());
+          data.put(path, section);
+          serializer.serialize(section, value);
+        }
         return options.autoSave() ? save() : this;
       }
       if(value == null) data.remove(paths[0]);

@@ -1,9 +1,6 @@
 package dev.perryplaysmc.dynamicconfigurations.yaml;
 
-import dev.perryplaysmc.dynamicconfigurations.DynamicConfigurationManager;
-import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationSection;
-import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationSerializer;
-import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationStringSerializer;
+import dev.perryplaysmc.dynamicconfigurations.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -118,7 +115,11 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
         IDynamicConfigurationSerializer<Object> serializer = DynamicConfigurationManager.serializer(value.getClass());
         if(serializer instanceof IDynamicConfigurationStringSerializer)
           data.put(paths[0], ((IDynamicConfigurationStringSerializer<Object>) serializer).serialize(value));
-        else serializer.serialize(start,value);
+        else {
+          IDynamicConfigurationSection section = new DynamicYamlConfigurationSectionImpl(configuration, this, path, new HashMap<>());
+          data.put(path, section);
+          serializer.serialize(section, value);
+        }
         return configuration.options().autoSave() ? save() : this;
       }
       if(value == null) data.remove(paths[0]);
