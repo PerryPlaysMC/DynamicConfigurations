@@ -54,10 +54,14 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     adapter.gson(GSON);
     DynamicConfigurationManager.addConfiguration(this);
   }
-  public DynamicJsonConfiguration(String name) {
-    this(null, (File)null, name);
+
+  public DynamicJsonConfiguration(JavaPlugin plugin, String name) {
+    this(plugin, (File) null, name);
   }
 
+  public DynamicJsonConfiguration(String name) {
+    this(null, (File) null, name);
+  }
 
   public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
     this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
