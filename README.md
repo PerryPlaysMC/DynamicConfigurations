@@ -1,7 +1,7 @@
 # DynamicConfigurations
 
-[Join the discord to be notified of updates!](https://discord.gg/QuG8R6c3ry)
-<br>NEW [Wiki](https://github.com/PerryPlaysMC/DynamicConfigurations/wiki)
+[Join the discord to be notified of updates!](https://discord.gg/QuG8R6c3ry)  
+NEW [Wiki](https://github.com/PerryPlaysMC/DynamicConfigurations/wiki)
 
 
 # Usage
@@ -34,6 +34,8 @@ directory.reload();
 ```
 
 # Maven
+[![](https://jitpack.io/v/PerryPlaysMC/DynamicConfigurations.svg)](https://jitpack.io/#PerryPlaysMC/DynamicConfigurations)
+
 ```xml
 <repositories>
   <repository>
@@ -49,4 +51,16 @@ directory.reload();
    <version>v1.3.4</version>
 </dependency>
 ```
+
+# Gradle
 [![](https://jitpack.io/v/PerryPlaysMC/DynamicConfigurations.svg)](https://jitpack.io/#PerryPlaysMC/DynamicConfigurations)
+
+```groovy
+repositories {
+    maven { url = 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'com.github.PerryPlaysMC:DynamicConfigurations:v1.3.4'
+}
+```
