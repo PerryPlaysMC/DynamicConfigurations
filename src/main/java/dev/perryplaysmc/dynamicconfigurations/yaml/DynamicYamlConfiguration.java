@@ -62,8 +62,12 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
     this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
   }
 
+  public DynamicYamlConfiguration(JavaPlugin plugin, String name) {
+    this(plugin, (File) null, name);
+  }
+
   public DynamicYamlConfiguration(String name) {
-    this(null, (File)null, name);
+    this(null, (File) null, name);
   }
 
   public DynamicYamlConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
