@@ -50,6 +50,47 @@ public interface IDynamicConfigurationSection {
   boolean isSet(String path);
 
   /**
+   * Set a value in the config with the provided path, if it's not already set
+   *
+   * @param path  Path to set to the config
+   * @param value Object to be set in the file
+   * @return this
+   */
+  default IDynamicConfigurationSection setIfNotSet(String path, Object value) {
+    if(isSet(path))
+      return this;
+    return set(path,value);
+  }
+
+  /**
+   * Set a value in the config with the provided path with a comment, if it's not already set
+   *
+   * @param path    Path to set to the config
+   * @param value   Object to be set in the file
+   * @param comment The comment associated with the data
+   * @return this
+   */
+  default IDynamicConfigurationSection setIfNotSet(String path, Object value, String comment) {
+    if(isSet(path))
+      return this;
+    return set(path,value,comment);
+  }
+
+  /**
+   * Set a value in the config with the provided path with an inline-comment, if it's not already set
+   *
+   * @param path    Path to set to the config
+   * @param value   Object to be set in the file
+   * @param comment The comment associated with the data
+   * @return this
+   */
+  default IDynamicConfigurationSection setIfNotSetInline(String path, Object value, String comment) {
+    if(isSet(path))
+      return this;
+    return setInline(path,value,comment);
+  }
+
+  /**
    * Set a value in the config with the provided path
    *
    * @param path  Path to set to the config
