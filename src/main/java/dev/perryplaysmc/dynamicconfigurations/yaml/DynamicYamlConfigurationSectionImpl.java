@@ -1,6 +1,7 @@
 package dev.perryplaysmc.dynamicconfigurations.yaml;
 
 import dev.perryplaysmc.dynamicconfigurations.*;
+import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,6 +43,11 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
   @Override
   public String fullPath() {
     return fullPath;
+  }
+
+  @Override
+  public DynamicConfigurationOptions<?> options() {
+    return configuration.options();
   }
 
   public IDynamicConfigurationSection parent() {
@@ -171,7 +177,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
   }
 
   @Override
-  public Object get(String path) {
+  public Object get(String path, Object defaultValue) {
     if(path.contains(".")) {
       String[] split = path.split("\\.");
       IDynamicConfigurationSection deep = this;
@@ -185,19 +191,21 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
         } else break;
         indexes = i;
       }
-      return data.getOrDefault(path, deep != this && indexes == split.length - 1 ? deep : null);
+      return data.getOrDefault(path, deep != this && indexes == split.length - 1 ? deep : defaultValue);
     }
-    return data.getOrDefault(path, null);
+    return data.getOrDefault(path, defaultValue);
   }
 
 
   @Override
-  public <T> T get(Class<T> deserializeType, String path) {
+  public <T> T get(Class<T> deserializeType, String path, T defaultValue) {
     if(!DynamicConfigurationManager.hasSerializer(deserializeType)) return null;
     IDynamicConfigurationSerializer<T> serializer = DynamicConfigurationManager.serializer(deserializeType);
+    T deserializedValue = null;
     if(serializer instanceof IDynamicConfigurationStringSerializer)
-      return ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
-    return (T) serializer.deserialize(getSection(path) == null ? this : getSection(path));
+      deserializedValue = ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
+    else deserializedValue = (T) serializer.deserialize(getSection(path) == null ? this : getSection(path));
+    return deserializedValue == null ? defaultValue : deserializedValue;
   }
 
   @Override
@@ -397,6 +405,78 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
     } catch (Exception e) {
       return defaultValue;
     }
+  }
+
+  @Override
+  public boolean contains(String path) {
+    return contains(path, false);
+  }
+
+  @Override
+  public boolean contains(String path, boolean ignoreDefaults) {
+    return ignoreDefaults ? get(path, null) != null : get(path) != null;
+  }
+
+  @Override
+  public boolean isInteger(String path) {
+    try {
+      Integer.parseInt(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isDouble(String path) {
+    try {
+      Double.parseDouble(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isBoolean(String path) {
+    String bool = get(path)+"";
+    return bool.equalsIgnoreCase("true")||bool.equalsIgnoreCase("false")
+      ||bool.equalsIgnoreCase("yes")||bool.equalsIgnoreCase("no");
+  }
+
+  @Override
+  public boolean isLong(String path) {
+    try {
+      Long.parseLong(get(path) + "");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isShort(String path) {
+    try {
+      Short.parseShort(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isByte(String path) {
+    try {
+      Byte.parseByte(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isString(String path) {
+    return get(path) instanceof String;
   }
 
   @Override

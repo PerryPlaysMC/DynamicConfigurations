@@ -5,7 +5,6 @@ import dev.perryplaysmc.dynamicconfigurations.*;
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationDirectory;
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
 import dev.perryplaysmc.dynamicconfigurations.utils.FileUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -27,54 +26,67 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
   protected final HashMap<String, String> INLINE_COMMENTS = new HashMap<>();
   private final File file;
   private final JavaPlugin plugin;
-  private final DynamicConfigurationOptions options;
+  private final DynamicConfigurationOptions<DynamicYamlConfiguration> options;
   private Map<String, Object> data = new LinkedHashMap<>();
   private File directory;
-  private Supplier<InputStream> stream;
-  private boolean isGhost = false;
+  private DynamicConfigurationManager.InputStreamSupplier stream;
+  private final boolean isGhost;
   private YamlConfiguration yaml;
   private String lastPath = "";
   private DynamicConfigurationDirectory configurationDirectory;
 
-  public DynamicYamlConfiguration(JavaPlugin plugin, File directory, String name) {
+  public DynamicYamlConfiguration(JavaPlugin plugin, boolean isGhost, File directory, String name) {
     this.plugin = plugin;
+    String split = name.contains("/") ? "/" : File.pathSeparator;
+    String substring = name.contains(split) ? name.substring(0, name.lastIndexOf(split)) : name;
     if(directory == null) {
-      if(name.contains("/")) directory = new File(name.substring(0, name.lastIndexOf('/')));
+      if(name.contains(split)) directory = new File(substring);
       else directory = new File(plugin!=null? plugin.getDataFolder()+"":"");
     }
     if(name.contains("/")) {
-      String dir = name.substring(0, name.lastIndexOf('/'));
-      if(!directory.getPath().endsWith(dir))
-        directory = new File(directory, dir);
-      name = name.substring(name.lastIndexOf('/') + 1);
+      if(!directory.getPath().endsWith(substring))
+        directory = new File(directory, substring);
+      name = name.substring(name.lastIndexOf(split) + 1);
     }
+    this.isGhost = isGhost;
     this.directory = directory;
     this.file = new File(directory, name + (name.endsWith(".yml") ? "" : ".yml"));
     this.stream = () -> FileUtils.findStream(plugin, file);
-    this.options = new DynamicConfigurationOptions(this);
+    this.options = new DynamicConfigurationOptions<>(this);
     this.configurationDirectory = DynamicConfigurationManager.getConfigurationDirectory(directory);
     if(!file.exists()) regenerate();
     reload();
     DynamicConfigurationManager.addConfiguration(this);
   }
+  public DynamicYamlConfiguration(JavaPlugin plugin, File directory, String name) {
+    this(plugin, false, directory, name);
+  }
+
+  public DynamicYamlConfiguration(JavaPlugin plugin, boolean isGhost, String directory, String name) {
+    this(plugin, isGhost, directory == null || directory.isEmpty() ? null : new File(directory), name);
+  }
+
 
   public DynamicYamlConfiguration(JavaPlugin plugin, String directory, String name) {
-    this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
+    this(plugin, false, directory, name);
   }
 
-  public DynamicYamlConfiguration(String name) {
-    this(null, (File)null, name);
+  public DynamicYamlConfiguration(boolean isGhost, String name) {
+    this(null, isGhost, (File)null, name);
   }
 
+  public DynamicYamlConfiguration(JavaPlugin plugin, boolean isGhost, DynamicConfigurationDirectory directory, String name) {
+    this(plugin, isGhost, directory == null ? null : directory.directory(), name);
+    if(directory != null) configurationDirectory(directory);
+  }
   public DynamicYamlConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
-    this(plugin, directory == null ? null : directory.directory(), name);
+    this(plugin, false, directory == null ? null : directory.directory(), name);
     if(directory != null) configurationDirectory(directory);
   }
 
-  public DynamicYamlConfiguration(JavaPlugin plugin, Supplier<InputStream> inputStream, String name) {
-    this(plugin, "", name);
+  public DynamicYamlConfiguration(JavaPlugin plugin, DynamicConfigurationManager.InputStreamSupplier inputStream, String name) {
+    this(plugin, true, "", name);
     this.stream = inputStream;
-    this.isGhost = true;
     reload();
   }
 
@@ -114,7 +126,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
   }
 
   @Override
-  public DynamicConfigurationOptions options() {
+  public DynamicConfigurationOptions<DynamicYamlConfiguration> options() {
     return options;
   }
 
@@ -138,6 +150,16 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
   @Override
   public String name() {
     return file.getName();
+  }
+
+  @Override
+  public boolean supportsComments() {
+    return true;
+  }
+
+  @Override
+  public boolean isGhost() {
+    return isGhost;
   }
 
 
@@ -182,7 +204,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
       if(isGhost) return this;
       if(stream!=null&&stream.get()!=null)
         if(options().appendMissingKeys() && DynamicConfigurationManager.isMissingKeys(this, stream))
-          DynamicConfigurationManager.appendMissingKeysFrom(stream, this);
+          DynamicConfigurationManager.appendMissingKeysFromTo(stream, this);
       yaml.options().indent(options.indent());
       try {yaml.loadFromString("");} catch (InvalidConfigurationException ignored) {}
       toBukkit(this, yaml);
@@ -200,9 +222,11 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
   public IDynamicConfiguration reload() {
     if(isGhost) {
       updateComments();
-      yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(stream.get()));
+      if(stream == null || stream.get() == null) yaml = new YamlConfiguration();
+      else yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(stream.get()));
       this.data = new LinkedHashMap<>();
-      fromBukkit(FileUtils.findKeys(stream.get()), yaml, this);
+      if(stream != null && stream.get() != null)
+        fromBukkit(FileUtils.findKeys(stream.get()), yaml, this);
       return this;
     }
     if(file != null) {
@@ -218,6 +242,8 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
     }
     try {
       InputStream inputStream = file == null ? stream.get() : Files.newInputStream(file.toPath());
+      if(options.loadDefaults() && stream != null && stream.get() != null)
+        options.defaults().data().putAll(DynamicConfigurationManager.createGhostConfiguration(plugin(), UUID.randomUUID()+name(), stream).data());
       yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(inputStream));
       this.data = new LinkedHashMap<>();
       inputStream = file == null ? stream.get() : Files.newInputStream(file.toPath());
@@ -364,7 +390,7 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
   }
 
   @Override
-  public Object get(String path) {
+  public Object get(String path, Object defaultValue) {
     if(path.contains(".")) {
       String[] split = path.split("\\.");
       IDynamicConfigurationSection deep = this;
@@ -378,19 +404,21 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
         } else break;
         indexes = i;
       }
-      return data.getOrDefault(path, deep != this && indexes == split.length - 1 ? deep : null);
+      return data.getOrDefault(path, deep != this && indexes == split.length - 1 ? deep : defaultValue);
     }
-    return data.getOrDefault(path, null);
+    return data.getOrDefault(path, defaultValue);
   }
 
 
   @Override
-  public <T> T get(Class<T> deserializeType, String path) {
+  public <T> T get(Class<T> deserializeType, String path, T defaultValue) {
     if(!DynamicConfigurationManager.hasSerializer(deserializeType)) return null;
     IDynamicConfigurationSerializer<T> serializer = DynamicConfigurationManager.serializer(deserializeType);
+    T deserializedValue = null;
     if(serializer instanceof IDynamicConfigurationStringSerializer)
-      return ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
-    return (T) serializer.deserialize(getSection(path) == null ? this : getSection(path));
+      deserializedValue = ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
+    else deserializedValue = (T) serializer.deserialize(getSection(path) == null ? this : getSection(path));
+    return deserializedValue == null ? defaultValue : deserializedValue;
   }
 
   @Override
@@ -564,6 +592,78 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
     } catch (Exception e) {
       return defaultValue;
     }
+  }
+
+  @Override
+  public boolean contains(String path) {
+    return contains(path, false);
+  }
+
+  @Override
+  public boolean contains(String path, boolean ignoreDefaults) {
+    return ignoreDefaults ? get(path, null) != null : get(path) != null;
+  }
+
+  @Override
+  public boolean isInteger(String path) {
+    try {
+      Integer.parseInt(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isDouble(String path) {
+    try {
+      Double.parseDouble(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isBoolean(String path) {
+    String bool = get(path)+"";
+    return bool.equalsIgnoreCase("true")||bool.equalsIgnoreCase("false")
+      ||bool.equalsIgnoreCase("yes")||bool.equalsIgnoreCase("no");
+  }
+
+  @Override
+  public boolean isLong(String path) {
+    try {
+      Long.parseLong(get(path) + "");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isShort(String path) {
+    try {
+      Short.parseShort(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isByte(String path) {
+    try {
+      Byte.parseByte(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isString(String path) {
+    return get(path) instanceof String;
   }
 
   @Override

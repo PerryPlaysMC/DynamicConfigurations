@@ -1,5 +1,7 @@
 package dev.perryplaysmc.dynamicconfigurations;
 
+import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
+
 import java.util.*;
 
 /**
@@ -12,6 +14,8 @@ public interface IDynamicConfigurationSection {
   String id();
 
   String fullPath();
+  
+  DynamicConfigurationOptions<?> options();
 
   IDynamicConfigurationSection parent();
 
@@ -96,7 +100,9 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The object from the config, null if not set
    */
-  Object get(String path);
+  default Object get(String path) {
+    return get(path, options().defaults().get(path));
+  }
 
   /**
    * Get an Object from the config
@@ -105,9 +111,7 @@ public interface IDynamicConfigurationSection {
    * @param defaultValue If the path is not set, return defaultValue
    * @return The object from the config, defaultValue if not set
    */
-  default Object get(String path, Object defaultValue) {
-    return get(path) == null ? defaultValue : get(path);
-  }
+  Object get(String path, Object defaultValue);
 
   /**
    * Get an Object from the config
@@ -115,7 +119,9 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The object from the config, null if not set
    */
-  <T> T get(Class<T> deserializeType, String path);
+  default <T> T get(Class<T> deserializeType, String path) {
+    return get(deserializeType, path, options().defaults().get(deserializeType, path));
+  }
 
   /**
    * Get an Object from the config
@@ -124,9 +130,7 @@ public interface IDynamicConfigurationSection {
    * @param defaultValue If the path is not set, return defaultValue
    * @return The object from the config, defaultValue if not set
    */
-  default <T> T get(Class<T>  deserializeType, String path, T defaultValue) {
-    return get(deserializeType, path) == null ? defaultValue : get(deserializeType, path);
-  }
+  <T> T get(Class<T>  deserializeType, String path, T defaultValue);
 
   /**
    * Get a ConfigurationSection
@@ -158,8 +162,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The String from the config, null if not set
    */
-  default String getString(String path) {
-    return getString(path, null);
+  default String getString(String path){
+    return getString(path, options().defaults().getString(path));
   }
 
   /**
@@ -177,8 +181,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the Double is located
    * @return The String from the config, null if not set
    */
-  default Double getDouble(String path) {
-    return getDouble(path, null);
+  default Double getDouble(String path){
+    return getDouble(path, options().defaults().getDouble(path));
   }
 
   /**
@@ -196,8 +200,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the Integer is located
    * @return The Integer from the config, null if not set
    */
-  default Integer getInteger(String path) {
-    return getInteger(path, null);
+  default Integer getInteger(String path){
+    return getInteger(path, options().defaults().getInteger(path));
   }
 
   /**
@@ -215,8 +219,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the Float is located
    * @return The Float from the config, null if not set
    */
-  default Float getFloat(String path) {
-    return getFloat(path, null);
+  default Float getFloat(String path){
+    return getFloat(path, options().defaults().getFloat(path));
   }
 
   /**
@@ -234,8 +238,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the Byte is located
    * @return The Byte from the config, null if not set
    */
-  default Byte getByte(String path) {
-    return getByte(path, null);
+  default Byte getByte(String path){
+    return getByte(path, options().defaults().getByte(path));
   }
 
   /**
@@ -253,8 +257,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the Boolean is located
    * @return The Boolean from the config, null if not set
    */
-  default Boolean getBoolean(String path) {
-    return getBoolean(path, null);
+  default Boolean getBoolean(String path){
+    return getBoolean(path, options().defaults().getBoolean(path));
   }
 
   /**
@@ -273,8 +277,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the String is located
    * @return The String from the config, null if not set
    */
-  default String getMessage(String path) {
-    return getMessage(path, null);
+  default String getMessage(String path){
+    return getMessage(path, options().defaults().getMessage(path));
   }
 
   /**
@@ -293,8 +297,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The List<Object> from the config, null if not set
    */
-  default List<?> getList(String path) {
-    return getList(path, null);
+  default List<?> getList(String path){
+    return getList(path, options().defaults().getList(path));
   }
 
   /**
@@ -313,8 +317,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The List<String> from the config, null if not set
    */
-  default List<String> getListString(String path) {
-    return getListString(path, null);
+  default List<String> getListString(String path){
+    return getListString(path, options().defaults().getListString(path));
   }
 
   /**
@@ -333,8 +337,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The List<Double> from the config, null if not set
    */
-  default List<Double> getListDouble(String path) {
-    return getListDouble(path, null);
+  default List<Double> getListDouble(String path){
+    return getListDouble(path, options().defaults().getListDouble(path));
   }
 
   /**
@@ -353,8 +357,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The List<Integer> from the config, null if not set
    */
-  default List<Integer> getListInteger(String path) {
-    return getListInteger(path, null);
+  default List<Integer> getListInteger(String path){
+    return getListInteger(path, options().defaults().getListInteger(path));
   }
 
   /**
@@ -373,8 +377,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The List<Float> from the config, null if not set
    */
-  default List<Float> getListFloat(String path) {
-    return getListFloat(path, null);
+  default List<Float> getListFloat(String path){
+    return getListFloat(path, options().defaults().getListFloat(path));
   }
 
   /**
@@ -393,8 +397,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The List<Byte> from the config, null if not set
    */
-  default List<Byte> getListByte(String path) {
-    return getListByte(path, null);
+  default List<Byte> getListByte(String path){
+    return getListByte(path, options().defaults().getListByte(path));
   }
 
   /**
@@ -413,8 +417,8 @@ public interface IDynamicConfigurationSection {
    * @param path The path where the object is located
    * @return The List<Boolean> from the config, null if not set
    */
-  default List<Boolean> getListBoolean(String path) {
-    return getListBoolean(path, null);
+  default List<Boolean> getListBoolean(String path){
+    return getListBoolean(path, options().defaults().getListBoolean(path));
   }
 
   /**
@@ -426,6 +430,23 @@ public interface IDynamicConfigurationSection {
    */
   List<Boolean> getListBoolean(String path, List<Boolean> defaultValue);
 
+  boolean contains(String path);
+
+  boolean contains(String path, boolean ignoreDefaults);
+
+  boolean isInteger(String path);
+
+  boolean isDouble(String path);
+
+  boolean isBoolean(String path);
+
+  boolean isLong(String path);
+
+  boolean isShort(String path);
+
+  boolean isByte(String path);
+
+  boolean isString(String path);
 
   default String asString() {
     List<String> lines = new ArrayList<>();

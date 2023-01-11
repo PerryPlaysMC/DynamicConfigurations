@@ -21,13 +21,15 @@ public interface IDynamicConfiguration extends IDynamicConfigurationSection {
 
   JavaPlugin plugin();
 
-  DynamicConfigurationOptions options();
-
   DynamicConfigurationDirectory configurationDirectory();
 
   IDynamicConfiguration configurationDirectory(DynamicConfigurationDirectory directory);
 
   String name();
+
+  boolean supportsComments();
+
+  boolean isGhost();
 
   Map<String, String> comments();
 

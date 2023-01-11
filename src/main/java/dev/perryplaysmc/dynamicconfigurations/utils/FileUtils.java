@@ -32,9 +32,9 @@ public class FileUtils {
   /**
    * @group 1 = Spacing
    * @group 2 = Key
-   * @group 3 = Comment
+   * @group 4 = Comment
    */
-  private static final Pattern INLINE_COMMENT_DETECTOR = Pattern.compile("(\\s*)([^:]+):(?:.*)?(#.+)",
+  private static final Pattern INLINE_COMMENT_DETECTOR = Pattern.compile("(\\s+)?([^:]+):\\s*(?:(?:(?<a>['\\\"]).*(?:\\k<a>))|[^#]+)?(\\s*#.+)?",
     Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
   /**
    * @group 1 = Spacing
@@ -289,8 +289,7 @@ public class FileUtils {
         if(inlineMatcher.find()) {
           currentIndent = inlineMatcher.group(1) == null ? 0 : inlineMatcher.group(1).length();
           currentLine = inlineMatcher.group(2);
-          if(inlineMatcher.group(3) != null)
-            comment = inlineMatcher.group(3);
+          if(inlineMatcher.group(4) != null) comment = inlineMatcher.group(4);
         } else if(defaultPathMatcher.find()) {
           currentIndent = defaultPathMatcher.group(1) == null ? 0 : defaultPathMatcher.group(1).length();
           currentLine = defaultPathMatcher.group(2);
@@ -324,16 +323,16 @@ public class FileUtils {
       INPUTSTREAM_CACHE.put(filePath, filePath);
       return plugin.getResource(filePath);
     }
-    String[] split = filePath.split(File.separator);
-    int subStringIndex = 0;
+    String sp = filePath.contains(File.separator) ? File.separator : "/";
+    String[] split = filePath.split(Pattern.quote(sp));
+    StringBuilder filePathLocator = new StringBuilder();
     for(int i = split.length - 1; i > 0; i--) {
-      String path = split[i];
-      String fullFilePath = filePath.substring(subStringIndex);
-      if(plugin.getResource(fullFilePath) != null) {
-        INPUTSTREAM_CACHE.put(filePath, fullFilePath);
-        return plugin.getResource(fullFilePath);
+      filePathLocator.insert(0, split[i] + sp);
+      String locator = filePathLocator.toString();
+      if(plugin.getResource(locator) != null) {
+        INPUTSTREAM_CACHE.put(filePath, locator);
+        return plugin.getResource(locator);
       }
-      subStringIndex += path.length();
     }
     return null;
   }

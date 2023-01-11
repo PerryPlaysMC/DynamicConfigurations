@@ -8,11 +8,13 @@ import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationDirector
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
 import dev.perryplaysmc.dynamicconfigurations.utils.FileUtils;
 import dev.perryplaysmc.dynamicconfigurations.yaml.DynamicYamlConfigurationSectionImpl;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -23,55 +25,69 @@ import java.util.stream.Collectors;
 public class DynamicJsonConfiguration implements IDynamicConfiguration {
   private final File file;
   private final JavaPlugin plugin;
-  private final DynamicConfigurationOptions options;
+  private final DynamicConfigurationOptions<DynamicJsonConfiguration> options;
   private final DynamicJsonAdapter adapter = new DynamicJsonAdapter(this);
   private final Gson GSON = new GsonBuilder().setPrettyPrinting().registerTypeAdapter(DynamicJsonConfigurationSection.class, adapter).create();
   private Map<String, Object> data = new LinkedHashMap<>();
+  private Map<String, String> EMPTY_COMMENTS = new HashMap<>();
   private File directory;
   private boolean isGhost = false;
-  private Supplier<InputStream> stream;
-  private DynamicConfigurationDirectory configurationDirectory = null;
-
-  public DynamicJsonConfiguration(JavaPlugin plugin, File directory, String name) {
+  private DynamicConfigurationManager.InputStreamSupplier stream;
+  private DynamicConfigurationDirectory configurationDirectory;
+  public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, File directory, String name) {
     this.plugin = plugin;
+    String split = name.contains("/") ? "/" : File.pathSeparator;
+    String substring = name.contains(split) ? name.substring(0, name.lastIndexOf(split)) : name;
     if(directory == null) {
-      if(name.contains("/")) directory = new File(name.substring(0, name.lastIndexOf('/')));
-      else directory = new File(plugin!=null?plugin.getDataFolder()+"":"");
+      if(name.contains(split)) directory = new File(substring);
+      else directory = new File(plugin!=null? plugin.getDataFolder()+"":"");
     }
     if(name.contains("/")) {
-      String dir = name.substring(0, name.lastIndexOf('/'));
-      if(!directory.getPath().endsWith(dir))
-        directory = new File(directory, dir);
-      name = name.substring(name.lastIndexOf('/') + 1);
+      if(!directory.getPath().endsWith(substring))
+        directory = new File(directory, substring);
+      name = name.substring(name.lastIndexOf(split) + 1);
     }
+    this.isGhost = isGhost;
     this.directory = directory;
-    this.file = new File(directory, name + (!name.endsWith(".json") ? ".json" : ""));
-    if(!this.file.exists()) regenerate();
+    this.file = new File(directory, name + (name.endsWith(".yml") ? "" : ".yml"));
     this.stream = () -> FileUtils.findStream(plugin, file);
-    this.options = new DynamicConfigurationOptions(this);
+    this.options = new DynamicConfigurationOptions<>(this);
     this.configurationDirectory = DynamicConfigurationManager.getConfigurationDirectory(directory);
+    if(!file.exists()) regenerate();
     reload();
     adapter.gson(GSON);
     DynamicConfigurationManager.addConfiguration(this);
   }
-  public DynamicJsonConfiguration(String name) {
-    this(null, (File)null, name);
+  public DynamicJsonConfiguration(JavaPlugin plugin, File directory, String name) {
+    this(plugin, false, directory, name);
+  }
+
+  public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, String directory, String name) {
+    this(plugin, isGhost, directory == null || directory.isEmpty() ? null : new File(directory), name);
   }
 
 
   public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
-    this(plugin, directory == null || directory.isEmpty() ? null : new File(directory), name);
+    this(plugin, false, directory, name);
   }
 
+  public DynamicJsonConfiguration(boolean isGhost, String name) {
+    this(null, isGhost, (File)null, name);
+  }
+
+  public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, DynamicConfigurationDirectory directory, String name) {
+    this(plugin, isGhost, directory == null ? null : directory.directory(), name);
+    if(directory != null) configurationDirectory(directory);
+  }
   public DynamicJsonConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
-    this(plugin, directory.directory().getPath(), name);
-    this.configurationDirectory = directory;
+    this(plugin, false, directory == null ? null : directory.directory(), name);
+    if(directory != null) configurationDirectory(directory);
   }
 
-  public DynamicJsonConfiguration(JavaPlugin plugin, Supplier<InputStream> inputStream, String name) {
-    this(plugin, "", name);
-    this.isGhost = true;
+  public DynamicJsonConfiguration(JavaPlugin plugin, DynamicConfigurationManager.InputStreamSupplier inputStream, String name) {
+    this(plugin, true, "", name);
     this.stream = inputStream;
+    reload();
   }
 
   @Override
@@ -126,7 +142,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   }
 
   @Override
-  public DynamicConfigurationOptions options() {
+  public DynamicConfigurationOptions<DynamicJsonConfiguration> options() {
     return options;
   }
 
@@ -136,13 +152,29 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   }
 
   @Override
+  public boolean supportsComments() {
+    return false;
+  }
+
+  @Override
+  public boolean isGhost() {
+    return isGhost;
+  }
+
+  @Override
   public Map<String, String> comments() {
-    throw new UnsupportedOperationException("Comments are not supported in json files");
+    if(DynamicConfigurationManager.DEBUG_ENABLED)
+      Bukkit.getLogger().log(Level.WARNING,
+        "Comments are not supported in json files("+file()+"): " + DynamicConfigurationManager.getStackTrace());
+    return EMPTY_COMMENTS;
   }
 
   @Override
   public Map<String, String> inlineComments() {
-    throw new UnsupportedOperationException("Comments are not supported in json files");
+    if(DynamicConfigurationManager.DEBUG_ENABLED)
+      Bukkit.getLogger().log(Level.WARNING,
+        "Comments are not supported in json files("+file()+"): " + DynamicConfigurationManager.getStackTrace());
+    return EMPTY_COMMENTS;
   }
 
   @Override
@@ -185,7 +217,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     if(isGhost) return this;
     if(stream!=null&&stream.get()!=null)
       if(options().appendMissingKeys() && DynamicConfigurationManager.isMissingKeys(this, stream)) {
-        DynamicConfigurationManager.appendMissingKeysFrom(stream, this);
+        DynamicConfigurationManager.appendMissingKeysFromTo(stream, this);
       }
     FileUtils.writeFile(Collections.singletonList(saveToString()), file);
     return this;
@@ -198,6 +230,8 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
         data = (Map<String, Object>) GSON.fromJson(new InputStreamReader(stream.get()), Map.class);
       else {
         if(!this.file.exists()) regenerate();
+        if(options.loadDefaults() && stream != null && stream.get() != null)
+          options.defaults().data().putAll(DynamicConfigurationManager.createGhostConfiguration(plugin(), UUID.randomUUID()+name(), stream).data());
         data = (Map<String, Object>) GSON.fromJson(new FileReader(file), Map.class);
       }
     } catch (FileNotFoundException e) {
@@ -274,26 +308,38 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
 
   @Override
   public IDynamicConfigurationSection set(String path, Object value, String comment) {
-    throw new UnsupportedOperationException("Comments are not supported in json files");
+    if(DynamicConfigurationManager.DEBUG_ENABLED)
+      Bukkit.getLogger().log(Level.WARNING,
+        "Comments are not supported in json files: ("+file()+")" + DynamicConfigurationManager.getStackTrace() + " '" + path + "'");
+    return set(path, value);
   }
 
   @Override
   public IDynamicConfigurationSection setInline(String path, Object value, String comment) {
-    throw new UnsupportedOperationException("Comments are not supported in json files");
+    if(DynamicConfigurationManager.DEBUG_ENABLED)
+      Bukkit.getLogger().log(Level.WARNING,
+        "Comments are not supported in json files: ("+file()+")" + DynamicConfigurationManager.getStackTrace() + " '" + path + "'");
+    return set(path, value);
   }
 
   @Override
   public IDynamicConfigurationSection comment(String... comment) {
-    throw new UnsupportedOperationException("Comments are not supported in json files");
+    if(DynamicConfigurationManager.DEBUG_ENABLED)
+      Bukkit.getLogger().log(Level.WARNING,
+        "Comments are not supported in json files("+file()+"): " + DynamicConfigurationManager.getStackTrace());
+    return this;
   }
 
   @Override
   public IDynamicConfigurationSection inlineComment(String... comment) {
-    throw new UnsupportedOperationException("Comments are not supported in json files");
+    if(DynamicConfigurationManager.DEBUG_ENABLED)
+      Bukkit.getLogger().log(Level.WARNING,
+        "Comments are not supported in json files("+file()+"): " + DynamicConfigurationManager.getStackTrace());
+    return this;
   }
 
   @Override
-  public Object get(String path) {
+  public Object get(String path, Object defaultValue) {
     if(path.contains(".")) {
       String[] split = path.split("\\.");
       IDynamicConfigurationSection deep = this;
@@ -307,9 +353,9 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
         } else break;
         indexes = i;
       }
-      return data.getOrDefault(path, deep != this && indexes == split.length - 1 ? deep : null);
+      return data.getOrDefault(path, deep != this && indexes == split.length - 1 ? deep : defaultValue);
     }
-    return data.getOrDefault(path, null);
+    return data.getOrDefault(path, defaultValue);
   }
 
 
@@ -320,6 +366,11 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     if(serializer instanceof IDynamicConfigurationStringSerializer)
       return ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
     return (T) serializer.deserialize(getSection(path) == null ? this : getSection(path));
+  }
+
+  @Override
+  public <T> T get(Class<T> deserializeType, String path, T defaultValue) {
+    return null;
   }
 
   @Override
@@ -337,7 +388,10 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
 
   @Override
   public IDynamicConfigurationSection createSection(String path, String comment) {
-    throw new UnsupportedOperationException("Comments are not supported in json files");
+    if(DynamicConfigurationManager.DEBUG_ENABLED)
+      Bukkit.getLogger().log(Level.WARNING,
+        "Comments are not supported in json files: ("+file()+")" + DynamicConfigurationManager.getStackTrace() + " '" + path + "'");
+    return createSection(path);
   }
 
   @Override
@@ -353,8 +407,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     if(!(value instanceof Double) && value != null)
       try {
         f = Double.parseDouble(value.toString());
-      } catch (Exception e) {
-      }
+      } catch (Exception e) {}
     return !(value instanceof Double) ? f : (Double) value;
   }
 
@@ -365,8 +418,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     if(!(value instanceof Integer) && value != null)
       try {
         f = Integer.parseInt(value.toString());
-      } catch (Exception e) {
-      }
+      } catch (Exception e) {}
     return !(value instanceof Integer) ? f : (Integer) value;
   }
 
@@ -377,8 +429,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     if(!(value instanceof Float) && value != null)
       try {
         f = Float.parseFloat(value.toString());
-      } catch (Exception e) {
-      }
+      } catch (Exception e) {}
     return !(value instanceof Float) ? f : (Float) value;
   }
 
@@ -389,8 +440,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     if(!(value instanceof Byte) && value != null)
       try {
         f = Byte.parseByte(value.toString());
-      } catch (Exception e) {
-      }
+      } catch (Exception e) {}
     return !(value instanceof Byte) ? f : (Byte) value;
   }
 
@@ -401,8 +451,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     if(!(value instanceof Boolean) && value != null)
       try {
         f = Boolean.parseBoolean(value.toString());
-      } catch (Exception e) {
-      }
+      } catch (Exception e) {}
     return !(value instanceof Boolean) ? f : (Boolean) value;
   }
 
@@ -482,6 +531,78 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     } catch (Exception e) {
       return defaultValue;
     }
+  }
+
+  @Override
+  public boolean contains(String path) {
+    return contains(path, false);
+  }
+
+  @Override
+  public boolean contains(String path, boolean ignoreDefaults) {
+    return ignoreDefaults ? get(path, null) != null : get(path) != null;
+  }
+
+  @Override
+  public boolean isInteger(String path) {
+    try {
+      Integer.parseInt(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isDouble(String path) {
+    try {
+      Double.parseDouble(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isBoolean(String path) {
+    String bool = get(path)+"";
+    return bool.equalsIgnoreCase("true")||bool.equalsIgnoreCase("false")
+      ||bool.equalsIgnoreCase("yes")||bool.equalsIgnoreCase("no");
+  }
+
+  @Override
+  public boolean isLong(String path) {
+    try {
+      Long.parseLong(get(path) + "");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isShort(String path) {
+    try {
+      Short.parseShort(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isByte(String path) {
+    try {
+      Byte.parseByte(get(path)+"");
+      return true;
+    }catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean isString(String path) {
+    return get(path) instanceof String;
   }
 
   @Override

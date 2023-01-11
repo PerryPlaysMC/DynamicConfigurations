@@ -7,6 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Creator: PerryPlaysMC
@@ -56,8 +57,9 @@ public class DynamicConfigurationDirectory {
 
   public IDynamicConfiguration createConfiguration(String name) {
     DynamicConfigurationDirectory dir = this;
-    String[] split = name.split("/");
-    if(name.contains("/") && split.length > 0 && allowsSubDirectories())
+    String sp = name.contains(File.separator) ? File.separator : "/";
+    String[] split = name.split(Pattern.quote(sp));
+    if(name.contains(sp) && split.length > 0 && allowsSubDirectories())
       for(int i = 0; i < split.length - 1; i++) {
         String s = split[i];
         if(!s.isEmpty())
@@ -71,7 +73,8 @@ public class DynamicConfigurationDirectory {
   public IDynamicConfiguration getConfiguration(String name) {
     if(name.contains("/")) {
       DynamicConfigurationDirectory dir = this;
-      String[] split = name.split("/");
+      String sp = name.contains(File.separator) ? File.separator : "/";
+      String[] split = name.split(Pattern.quote(sp));
       for(int i = 0; i < split.length - 1; i++) {
         String s = split[i];
         if(!s.isEmpty()) dir = (dir.allowsSubDirectories() ? dir : this).getOrCreateSubDirectory(s);
@@ -111,9 +114,10 @@ public class DynamicConfigurationDirectory {
       configurations.add(configuration);
     else if(configuration.directory().getPath().startsWith(directory().getPath()) && allowsSubDirectories()) {
       String name = configuration.file().getPath().substring(directory().getPath().length());
-      String[] split = name.split("/");
+      String sp = name.contains(File.separator) ? File.separator : "/";
+      String[] split = name.split(Pattern.quote(sp));
       DynamicConfigurationDirectory dir = this;
-      if(name.contains("/") && split.length > 0 && allowsSubDirectories())
+      if(name.contains(sp) && split.length > 0 && allowsSubDirectories())
         for(int i = 0; i < split.length - 1; i++) {
           String s = split[i];
           if(!s.isEmpty())

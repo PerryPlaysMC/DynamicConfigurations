@@ -1,22 +1,53 @@
 package dev.perryplaysmc.dynamicconfigurations.utils;
 
+import dev.perryplaysmc.dynamicconfigurations.DynamicConfigurationManager;
 import dev.perryplaysmc.dynamicconfigurations.IDynamicConfiguration;
+
+import java.util.UUID;
 
 /**
  * Creator: PerryPlaysMC
  * Created: 03/2022
  **/
-public class DynamicConfigurationOptions {
+public class DynamicConfigurationOptions<T extends IDynamicConfiguration> {
 
   private final StringBuilder indentString = new StringBuilder("  ");
-  private final IDynamicConfiguration parentConfiguration;
+  private final T parentConfiguration;
+  private final IDynamicConfiguration defaults;
   private int indent = 2;
   private boolean autoSave = false;
   private boolean appendMissingKeys = false;
+  private boolean loadDefaults = false;
+  private boolean hasLoaded = false;
   private StringWrap stringWrap = StringWrap.DOUBLE_QUOTED;
 
-  public DynamicConfigurationOptions(IDynamicConfiguration parentConfiguration) {
+  public DynamicConfigurationOptions(T parentConfiguration) {
     this.parentConfiguration = parentConfiguration;
+    if(!parentConfiguration.isGhost())
+      this.defaults = DynamicConfigurationManager.createGhostConfiguration(parentConfiguration.plugin(), parentConfiguration.name(),
+        UUID.randomUUID() + parentConfiguration.name());
+    else this.defaults = null;
+  }
+
+  /**
+   * Will it load the defaults from the file?
+   * @return boolean
+   */
+  public boolean loadDefaults() {
+    return loadDefaults;
+  }
+
+  public DynamicConfigurationOptions<T> loadDefaults(boolean enabled) {
+    loadDefaults = enabled;
+    if(loadDefaults&&!hasLoaded){
+      configuration().reload();
+      hasLoaded = true;
+    }
+    return this;
+  }
+
+  public IDynamicConfiguration defaults() {
+    return defaults;
   }
 
   /**
@@ -31,7 +62,7 @@ public class DynamicConfigurationOptions {
    *
    * @param indent Indention length
    */
-  public DynamicConfigurationOptions indent(int indent) {
+  public DynamicConfigurationOptions<T> indent(int indent) {
     this.indent = indent;
     indentString.setLength(0);
     for(int i = 0; i < indent; i++)
@@ -44,16 +75,16 @@ public class DynamicConfigurationOptions {
   }
 
   /**
-   * Will it save whenever it is edited
+   * Will it save whenever it's edited?
    */
   public boolean autoSave() {
     return autoSave;
   }
 
   /**
-   * Should it save whenever it is edited
+   * Should it save whenever it's edited?
    */
-  public DynamicConfigurationOptions autoSave(boolean autoSave) {
+  public DynamicConfigurationOptions<T> autoSave(boolean autoSave) {
     this.autoSave = autoSave;
     return this;
   }
@@ -62,7 +93,7 @@ public class DynamicConfigurationOptions {
     return appendMissingKeys;
   }
 
-  public DynamicConfigurationOptions appendMissingKeys(boolean appendMissingKeys) {
+  public DynamicConfigurationOptions<T> appendMissingKeys(boolean appendMissingKeys) {
     this.appendMissingKeys = appendMissingKeys;
     return this;
   }
@@ -71,13 +102,13 @@ public class DynamicConfigurationOptions {
     return stringWrap;
   }
 
-  public DynamicConfigurationOptions stringWrap(StringWrap stringWrap) {
+  public DynamicConfigurationOptions<T> stringWrap(StringWrap stringWrap) {
     this.stringWrap = stringWrap;
     return this;
   }
 
 
-  public IDynamicConfiguration configuration() {
+  public T configuration() {
     return parentConfiguration;
   }
 
