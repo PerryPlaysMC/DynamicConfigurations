@@ -55,10 +55,9 @@ defaultString: "This is a default String"
 </repositories>
 
 <dependency>
-   <groupId>com.github.PerryPlaysMC</groupId>
-   <artifactId>DynamicConfigurations</artifactId>
-
-   <version>v1.3.4</version>
+    <groupId>com.github.PerryPlaysMC</groupId>
+    <artifactId>DynamicConfigurations</artifactId>
+    <version>1.4.1</version>
 </dependency>
 ```
 [![](https://jitpack.io/v/PerryPlaysMC/DynamicConfigurations.svg)](https://jitpack.io/#PerryPlaysMC/DynamicConfigurations)
