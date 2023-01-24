@@ -142,7 +142,7 @@ public interface IDynamicConfigurationSection {
    * @return The object from the config, null if not set
    */
   default Object get(String path) {
-    return get(path, options().defaults().get(path));
+    return get(path, options().defaults() == null ? null : options().defaults().get(path));
   }
 
   /**
@@ -161,7 +161,7 @@ public interface IDynamicConfigurationSection {
    * @return The object from the config, null if not set
    */
   default <T> T get(Class<T> deserializeType, String path) {
-    return get(deserializeType, path, options().defaults().get(deserializeType, path));
+    return get(deserializeType, path, options().defaults() == null ? null : options().defaults().get(deserializeType, path));
   }
 
   /**
@@ -204,7 +204,7 @@ public interface IDynamicConfigurationSection {
    * @return The String from the config, null if not set
    */
   default String getString(String path){
-    return getString(path, options().defaults().getString(path));
+    return getString(path, options().defaults() == null ? null : options().defaults().getString(path));
   }
 
   /**
@@ -223,7 +223,7 @@ public interface IDynamicConfigurationSection {
    * @return The String from the config, null if not set
    */
   default Double getDouble(String path){
-    return getDouble(path, options().defaults().getDouble(path));
+    return getDouble(path, options().defaults() == null ? null : options().defaults().getDouble(path));
   }
 
   /**
@@ -242,7 +242,7 @@ public interface IDynamicConfigurationSection {
    * @return The Integer from the config, null if not set
    */
   default Integer getInteger(String path){
-    return getInteger(path, options().defaults().getInteger(path));
+    return getInteger(path, options().defaults() == null ? null : options().defaults().getInteger(path));
   }
 
   /**
@@ -261,7 +261,7 @@ public interface IDynamicConfigurationSection {
    * @return The Float from the config, null if not set
    */
   default Float getFloat(String path){
-    return getFloat(path, options().defaults().getFloat(path));
+    return getFloat(path, options().defaults() == null ? null : options().defaults().getFloat(path));
   }
 
   /**
@@ -280,7 +280,7 @@ public interface IDynamicConfigurationSection {
    * @return The Byte from the config, null if not set
    */
   default Byte getByte(String path){
-    return getByte(path, options().defaults().getByte(path));
+    return getByte(path, options().defaults() == null ? null : options().defaults().getByte(path));
   }
 
   /**
@@ -299,7 +299,7 @@ public interface IDynamicConfigurationSection {
    * @return The Boolean from the config, null if not set
    */
   default Boolean getBoolean(String path){
-    return getBoolean(path, options().defaults().getBoolean(path));
+    return getBoolean(path, options().defaults() == null ? null : options().defaults().getBoolean(path));
   }
 
   /**
@@ -319,7 +319,7 @@ public interface IDynamicConfigurationSection {
    * @return The String from the config, null if not set
    */
   default String getMessage(String path){
-    return getMessage(path, options().defaults().getMessage(path));
+    return getMessage(path, options().defaults() == null ? null : options().defaults().getMessage(path));
   }
 
   /**
@@ -339,7 +339,7 @@ public interface IDynamicConfigurationSection {
    * @return The List<Object> from the config, null if not set
    */
   default List<?> getList(String path){
-    return getList(path, options().defaults().getList(path));
+    return getList(path, options().defaults() == null ? null : options().defaults().getList(path));
   }
 
   /**
@@ -359,7 +359,7 @@ public interface IDynamicConfigurationSection {
    * @return The List<String> from the config, null if not set
    */
   default List<String> getListString(String path){
-    return getListString(path, options().defaults().getListString(path));
+    return getListString(path, options().defaults() == null ? null : options().defaults().getListString(path));
   }
 
   /**
@@ -379,7 +379,7 @@ public interface IDynamicConfigurationSection {
    * @return The List<Double> from the config, null if not set
    */
   default List<Double> getListDouble(String path){
-    return getListDouble(path, options().defaults().getListDouble(path));
+    return getListDouble(path, options().defaults() == null ? null : options().defaults().getListDouble(path));
   }
 
   /**
@@ -399,7 +399,7 @@ public interface IDynamicConfigurationSection {
    * @return The List<Integer> from the config, null if not set
    */
   default List<Integer> getListInteger(String path){
-    return getListInteger(path, options().defaults().getListInteger(path));
+    return getListInteger(path, options().defaults() == null ? null : options().defaults().getListInteger(path));
   }
 
   /**
@@ -419,7 +419,7 @@ public interface IDynamicConfigurationSection {
    * @return The List<Float> from the config, null if not set
    */
   default List<Float> getListFloat(String path){
-    return getListFloat(path, options().defaults().getListFloat(path));
+    return getListFloat(path, options().defaults() == null ? null : options().defaults().getListFloat(path));
   }
 
   /**
@@ -439,7 +439,7 @@ public interface IDynamicConfigurationSection {
    * @return The List<Byte> from the config, null if not set
    */
   default List<Byte> getListByte(String path){
-    return getListByte(path, options().defaults().getListByte(path));
+    return getListByte(path, options().defaults() == null ? null : options().defaults().getListByte(path));
   }
 
   /**
@@ -459,7 +459,7 @@ public interface IDynamicConfigurationSection {
    * @return The List<Boolean> from the config, null if not set
    */
   default List<Boolean> getListBoolean(String path){
-    return getListBoolean(path, options().defaults().getListBoolean(path));
+    return getListBoolean(path, options().defaults() == null ? null : options().defaults().getListBoolean(path));
   }
 
   /**

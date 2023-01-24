@@ -243,7 +243,8 @@ public class DynamicYamlConfiguration implements IDynamicConfiguration {
     try {
       InputStream inputStream = file == null ? stream.get() : Files.newInputStream(file.toPath());
       if(options.loadDefaults() && stream != null && stream.get() != null)
-        options.defaults().data().putAll(DynamicConfigurationManager.createGhostConfiguration(plugin(), UUID.randomUUID()+name(), stream).data());
+        DynamicConfigurationManager.appendMissingKeysFromTo(DynamicConfigurationManager.createGhostConfiguration(plugin(),
+          UUID.randomUUID()+name(), stream),this);
       yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(inputStream));
       this.data = new LinkedHashMap<>();
       inputStream = file == null ? stream.get() : Files.newInputStream(file.toPath());

@@ -24,13 +24,25 @@ directory.reload();
 {
    IDynamicConfiguration ghost = DynamicConfigurationManager.createGhostConfiguration(this, "example.yml");
    IDynamicConfiguration yml = DynamicConfigurationManager.createConfiguration(this, "plugins/Example/example.yml")
-         .options().autoSave(true).appendMissingKeys(true).configuration();
+         .options().autoSave(true).loadDefaults(true).appendMissingKeys(true).configuration();
    yml.set("array", new String[]{"a","b","c"})
       .set("list", Arrays.asList("d","e","f"))
       .setInline("list2.list", Arrays.asList("g","h","i"), "Inline comment")
       .set("string", "h\ni\nj", "test comment")
       .set("string2.test", "h\ni\nj", "test comment :D");
+   
+   yml.options().defaults().set("defaultValue", "This is a default string");
+
+  String message = yml.getString("defaultValue");
+  //returns "This is a default string"
+  String text = yml.getString("defaultString");
+  //returns "This is a default String"
 }
+```
+## Example.yml (in project)
+```yml
+defaultString: "This is a default String"
+
 ```
 
 # Maven
