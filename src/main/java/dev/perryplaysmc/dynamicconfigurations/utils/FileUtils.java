@@ -66,6 +66,7 @@ public class FileUtils {
     } catch (IOException e) {
       e.printStackTrace();
     }
+    
   }
 
   public static void writeFile(List<String> out, File toPrint) {
@@ -133,8 +134,9 @@ public class FileUtils {
             if(value.charAt(0) != '-') value.insert(0, "- ");
             configValue.append(defaultIndentLength).append(match.group(1)).append(value).append("\n");
           }
-          configValue.setLength(configValue.length()-1);
-          originalLine.replace(start,end,""+configValue);
+          if(configValue.length()-1 > -1)
+            configValue.setLength(configValue.length()-1);
+          originalLine.replace(start,end,configValue.toString());
         }
         else if(configuration.get(path, null) instanceof String[]) {
           String[] str = (String[])configuration.get(path, null);
@@ -145,7 +147,7 @@ public class FileUtils {
             wrapText(wrapWith, value);
             configValue.append(value).append(", ");
           }
-          if(configValue.length()>0) configValue.setLength(configValue.length()-2);
+          if(configValue.length()-2 > -1) configValue.setLength(configValue.length()-2);
           configValue.insert(0," [").append(']');
           if(initialStart!=-1)
             originalLine.replace(initialStart,end,""+configValue);
