@@ -177,6 +177,7 @@ public class FileUtils {
     if(value.charAt(value.length() - 1) != wrapWith && StringWrap.isValid(value.charAt(value.length() - 1)))
       value.setLength(value.length()-1);
     if(value.charAt(value.length() - 1) != wrapWith) value.append(wrapWith);
+    if(value.length() == 1 && value.charAt(0) == wrapWith) value.append(wrapWith);
     if(wrapWith == StringWrap.SINGLE_QUOTED.wrapWith())
       value.replace(1,value.length()-1, value.substring(1,value.length()-1).replaceAll(("'(')"),("$1")).replace(("'"), ("''")));
   }
