@@ -1,7 +1,10 @@
-package dev.perryplaysmc.dynamicconfigurations.yaml;
+package io.dynamicstudios.configurations.yaml;
 
-import dev.perryplaysmc.dynamicconfigurations.*;
-import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
+import io.dynamicstudios.configurations.DynamicConfigurationManager;
+import io.dynamicstudios.configurations.IDynamicConfigurationSection;
+import io.dynamicstudios.configurations.IDynamicConfigurationSerializer;
+import io.dynamicstudios.configurations.IDynamicConfigurationStringSerializer;
+import io.dynamicstudios.configurations.utils.DynamicConfigurationOptions;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -101,7 +104,8 @@ public class DynamicYamlConfigurationSection implements IDynamicConfigurationSec
     if(path.contains(".")) {
       String[] split = path.split("\\.");
       IDynamicConfigurationSection deep = this;
-      for(String s : split) {
+      String[] range = Arrays.copyOfRange(split, 0, split.length - 1);
+      for(String s : range) {
         if(deep.get(s) != null)
           if(deep.get(s) instanceof IDynamicConfigurationSection) deep = (IDynamicConfigurationSection) deep.get(s);
           else if(!(deep.get(s) instanceof IDynamicConfigurationSection)) return true;

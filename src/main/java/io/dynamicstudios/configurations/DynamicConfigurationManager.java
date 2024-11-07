@@ -1,16 +1,15 @@
-package dev.perryplaysmc.dynamicconfigurations;
+package io.dynamicstudios.configurations;
 
-import dev.perryplaysmc.dynamicconfigurations.json.DynamicJsonConfiguration;
-import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationDirectory;
-import dev.perryplaysmc.dynamicconfigurations.utils.FileUtils;
-import dev.perryplaysmc.dynamicconfigurations.yaml.DynamicYamlConfiguration;
+import io.dynamicstudios.configurations.json.DynamicJsonConfiguration;
+import io.dynamicstudios.configurations.utils.DynamicConfigurationDirectory;
+import io.dynamicstudios.configurations.utils.FileUtils;
+import io.dynamicstudios.configurations.yaml.DynamicYamlConfiguration;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.InputStream;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 
 

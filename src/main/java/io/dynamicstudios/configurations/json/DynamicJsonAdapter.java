@@ -1,4 +1,4 @@
-package dev.perryplaysmc.dynamicconfigurations.json;
+package io.dynamicstudios.configurations.json;
 
 import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;

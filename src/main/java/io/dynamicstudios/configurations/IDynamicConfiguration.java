@@ -1,7 +1,6 @@
-package dev.perryplaysmc.dynamicconfigurations;
+package io.dynamicstudios.configurations;
 
-import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationDirectory;
-import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
+import io.dynamicstudios.configurations.utils.DynamicConfigurationDirectory;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;

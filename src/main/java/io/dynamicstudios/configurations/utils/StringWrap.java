@@ -1,7 +1,4 @@
-package dev.perryplaysmc.dynamicconfigurations.utils;
-
-import dev.perryplaysmc.dynamicconfigurations.DynamicConfigurationManager;
-import dev.perryplaysmc.dynamicconfigurations.IDynamicConfiguration;
+package io.dynamicstudios.configurations.utils;
 
 public enum StringWrap {
   NONE,

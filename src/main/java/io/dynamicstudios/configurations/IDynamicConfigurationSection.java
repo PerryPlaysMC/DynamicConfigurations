@@ -1,8 +1,11 @@
-package dev.perryplaysmc.dynamicconfigurations;
+package io.dynamicstudios.configurations;
 
-import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
+import io.dynamicstudios.configurations.utils.DynamicConfigurationOptions;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Creator: PerryPlaysMC

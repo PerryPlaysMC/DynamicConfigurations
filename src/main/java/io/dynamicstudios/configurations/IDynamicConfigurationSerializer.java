@@ -1,4 +1,4 @@
-package dev.perryplaysmc.dynamicconfigurations;
+package io.dynamicstudios.configurations;
 
 /**
  * Creator: PerryPlaysMC

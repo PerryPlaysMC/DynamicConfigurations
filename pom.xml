@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>dev.perryplaysmc.dynamicconfigurations</groupId>
+    <groupId>io.dynamicstudios.configurations</groupId>
     <artifactId>DynamicConfigurations</artifactId>
-    <version>1.4.4</version>
+    <version>1.4.5</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
