@@ -39,7 +39,7 @@ public interface IDynamicConfigurationSection {
   /**
    * @return All key values
    */
-  Set<String> getKeys(boolean deep);
+  List<String> getKeys(boolean deep);
 
   /**
    * Check if the config has a path set

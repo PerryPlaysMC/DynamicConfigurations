@@ -50,7 +50,9 @@ public class DynamicConfigurationDirectory {
           subDirectories.add(new DynamicConfigurationDirectory(plugin, file, this));
         continue;
       }
-      configurations.add(DynamicConfigurationManager.createConfiguration(plugin, this, file.getName()));
+	    String[] name = file.getName().split("\\.");
+	    if(DynamicConfigurationManager.hasRegister(name[name.length-1]))
+		    configurations.add(DynamicConfigurationManager.createConfiguration(plugin, this, file.getName()));
     }
     return this;
   }
@@ -66,6 +68,21 @@ public class DynamicConfigurationDirectory {
           dir = dir.getOrCreateSubDirectory(s);
       }
     IDynamicConfiguration configuration = DynamicConfigurationManager.createConfiguration(plugin, dir, name);
+    dir.configurations.add(configuration);
+    return configuration;
+  }
+
+  public IDynamicConfiguration createConfiguration(String resourceName, String name) {
+    DynamicConfigurationDirectory dir = this;
+    String sp = name.contains(File.separator) ? File.separator : "/";
+    String[] split = name.split(Pattern.quote(sp));
+    if(name.contains(sp) && split.length > 0 && allowsSubDirectories())
+      for(int i = 0; i < split.length - 1; i++) {
+        String s = split[i];
+        if(!s.isEmpty())
+          dir = dir.getOrCreateSubDirectory(s);
+      }
+    IDynamicConfiguration configuration = DynamicConfigurationManager.createConfiguration(plugin, dir, resourceName, name);
     dir.configurations.add(configuration);
     return configuration;
   }

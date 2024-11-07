@@ -5,7 +5,6 @@ import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationSection;
 import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationSerializer;
 import dev.perryplaysmc.dynamicconfigurations.IDynamicConfigurationStringSerializer;
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
-import dev.perryplaysmc.dynamicconfigurations.yaml.DynamicYamlConfigurationSectionImpl;
 import org.bukkit.Bukkit;
 
 import java.util.*;
@@ -85,7 +84,7 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
     return this;
   }
 
-  private HashSet<String> keys(IDynamicConfigurationSection map, HashSet<String> keys) {
+  private List<String> keys(IDynamicConfigurationSection map, List<String> keys) {
     for(String s : map.data().keySet()) {
       keys.add(s);
       if(map.get(s) instanceof IDynamicConfigurationSection) keys.addAll(((IDynamicConfigurationSection) map.get(s))
@@ -95,9 +94,9 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
   }
 
   @Override
-  public Set<String> getKeys(boolean deep) {
-    if(!deep) return data.keySet();
-    return keys(this, new HashSet<>());
+  public List<String> getKeys(boolean deep) {
+    if(!deep) return data.keySet().stream().sorted().collect(Collectors.toList());;
+    return keys(this, new ArrayList<>());
   }
 
   @Override
@@ -203,13 +202,14 @@ public class DynamicJsonConfigurationSection implements IDynamicConfigurationSec
 
   @Override
   public <T> T get(Class<T> deserializeType, String path, T defaultValue) {
-    if(!DynamicConfigurationManager.hasSerializer(deserializeType)) return null;
-    IDynamicConfigurationSerializer<T> serializer = DynamicConfigurationManager.serializer(deserializeType);
-    T deserialized = null;
-    if(serializer instanceof IDynamicConfigurationStringSerializer)
-      deserialized = ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
-    else deserialized = (T) serializer.deserialize(getSection(path) == null ? this : getSection(path));
-    return deserialized == null ? defaultValue : deserialized;
+	  if(!DynamicConfigurationManager.hasSerializer(deserializeType)) return null;
+	  IDynamicConfigurationSerializer<T> serializer = DynamicConfigurationManager.serializer(deserializeType);
+	  T deserializedValue = null;
+	  if(serializer instanceof IDynamicConfigurationStringSerializer) {
+		  if(getString(path) != null)
+			  deserializedValue = ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
+	  } else deserializedValue = serializer.deserialize(getSection(path) == null ? this : getSection(path));
+	  return deserializedValue == null ? defaultValue : deserializedValue;
   }
 
   @Override

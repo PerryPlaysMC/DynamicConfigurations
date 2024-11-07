@@ -83,7 +83,7 @@ public class FileUtils {
   public static String generateNewConfigString(IDynamicConfiguration configuration, DynamicConfigurationOptions options, Map<String, String> comments, Map<String, String> inlineComments) {
     String configString = configuration.saveToString();
     List<String> pathList = new ArrayList<>();
-    Pattern pattern = Pattern.compile("([^\\s:]+:)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    Pattern pattern = Pattern.compile("^\\s*-?\\s*([^\\s:]+:)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
     List<String> lines = getLines(configString,(string)-> pattern.matcher(string).find(),(string)->!string.replaceAll("\\s","").startsWith("#"));
     StringBuilder builder = new StringBuilder();
     int lastIndent = -1, indents = options.indent();
@@ -171,15 +171,15 @@ public class FileUtils {
   }
 
   private static void wrapText(Character wrapWith, StringBuilder value) {
-    if(wrapWith==null)return;
-    if(value.charAt(0) != wrapWith && StringWrap.isValid(value.charAt(0))) value.replace(0, 1, "");
-    if(value.charAt(0) != wrapWith) value.insert(0, wrapWith);
-    if(value.charAt(value.length() - 1) != wrapWith && StringWrap.isValid(value.charAt(value.length() - 1)))
-      value.setLength(value.length()-1);
-    if(value.charAt(value.length() - 1) != wrapWith) value.append(wrapWith);
-    if(value.length() == 1 && value.charAt(0) == wrapWith) value.append(wrapWith);
-    if(wrapWith == StringWrap.SINGLE_QUOTED.wrapWith())
-      value.replace(1,value.length()-1, value.substring(1,value.length()-1).replaceAll(("'(')"),("$1")).replace(("'"), ("''")));
+	  if(wrapWith==null)return;
+	  if(value.charAt(0) != wrapWith && StringWrap.isValid(value.charAt(0))) value.replace(0, 1, "");
+	  if(value.charAt(0) != wrapWith) value.insert(0, wrapWith);
+	  if(value.charAt(value.length() - 1) != wrapWith && StringWrap.isValid(value.charAt(value.length() - 1)))
+		  value.setLength(value.length()-1);
+	  if(value.charAt(value.length() - 1) != wrapWith) value.append(wrapWith);
+	  if(value.length() == 1 && value.charAt(0) == wrapWith) value.append(wrapWith);
+	  if(wrapWith == StringWrap.SINGLE_QUOTED.wrapWith())
+		  value.replace(1,value.length()-1, value.substring(1,value.length()-1).replaceAll(("'(')"),("$1")).replace(("'"), ("''")));
   }
 
   private static List<String> getLines(String text, Predicate<String> resetCondition, Predicate<String> concatCondition) {
@@ -210,18 +210,34 @@ public class FileUtils {
       BufferedReader reader = new BufferedReader(new InputStreamReader(file));
       List<String> keys = new LinkedList<>();
       String path;
-      int lastIndent = -1, indents = 0;
-      List<String> pathList = new ArrayList<>();
-      while((currentLine = reader.readLine()) != null) {
-        Matcher pathMatcher = COMMENT_PATH_DETECTOR.matcher(currentLine);
-        int currentIndent;
-        if(pathMatcher.find()) {
-          currentIndent = pathMatcher.group(1).length();
-          currentLine = pathMatcher.group(2);
-        } else continue;
-        if(indents == 0 && currentIndent > 0) indents = currentIndent;
-        if(currentLine.isEmpty() || currentLine.startsWith("#") || currentLine.replaceAll("\\s", "").startsWith("#")
-          || currentLine.replaceAll("\\s", "").startsWith("-")) continue;
+	    StringBuilder listSection = new StringBuilder();
+	    int lastIndent = -1, indents = 0;
+	    List<String> pathList = new ArrayList<>();
+	    boolean isListSection = false;
+	    while((currentLine = reader.readLine()) != null) {
+		    String originalLine = currentLine;
+		    Matcher pathMatcher = COMMENT_PATH_DETECTOR.matcher(currentLine);
+		    int currentIndent;
+		    if(pathMatcher.find()) {
+			    currentIndent = pathMatcher.group(1).length();
+			    currentLine = pathMatcher.group(2);
+		    } else continue;
+		    if(indents == 0 && currentIndent > 0) indents = currentIndent;
+		    if(currentLine.isEmpty() || currentLine.startsWith("#") || currentLine.replaceAll("\\s", "").startsWith("#")
+			    || currentLine.replaceAll("\\s", "").startsWith("-")) {
+			    isListSection = originalLine.matches("\\s*-\\s*[^:]+: .*");
+			    if(listSection.length() != 0)listSection.setLength(0);
+			    if(isListSection) listSection.append(originalLine);
+			    continue;
+		    }
+		    if(isListSection) {
+			    listSection.append('\n').append(originalLine);
+			    if(!listSection.toString().matches("(\\s*)-(\\s*)[^:]+:\\s*[^\\n]+\\n((\\1\\2) [^:]+:\\s*[^\\n]+\\n?)*")) {
+				    isListSection = false;
+				    listSection.setLength(0);
+			    }
+		    }
+		    if(isListSection) continue;
         pathList = createPath(pathList, currentLine, currentIndent, lastIndent, indents);
         path = String.join(".", pathList).replace("'", "");
         keys.add(path);

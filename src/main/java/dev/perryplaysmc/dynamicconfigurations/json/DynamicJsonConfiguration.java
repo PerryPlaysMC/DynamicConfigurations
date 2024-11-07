@@ -7,7 +7,7 @@ import dev.perryplaysmc.dynamicconfigurations.*;
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationDirectory;
 import dev.perryplaysmc.dynamicconfigurations.utils.DynamicConfigurationOptions;
 import dev.perryplaysmc.dynamicconfigurations.utils.FileUtils;
-import dev.perryplaysmc.dynamicconfigurations.yaml.DynamicYamlConfigurationSectionImpl;
+import dev.perryplaysmc.dynamicconfigurations.json.DynamicJsonConfigurationSection;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -34,61 +34,90 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   private boolean isGhost = false;
   private DynamicConfigurationManager.InputStreamSupplier stream;
   private DynamicConfigurationDirectory configurationDirectory;
-  public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, File directory, String name) {
-    this.plugin = plugin;
-    String split = name.contains("/") ? "/" : File.pathSeparator;
-    String substring = name.contains(split) ? name.substring(0, name.lastIndexOf(split)) : name;
-    if(directory == null) {
-      if(name.contains(split)) directory = new File(substring);
-      else directory = new File(plugin!=null? plugin.getDataFolder()+"":"");
-    }
-    if(name.contains("/")) {
-      if(!directory.getPath().endsWith(substring))
-        directory = new File(directory, substring);
-      name = name.substring(name.lastIndexOf(split) + 1);
-    }
-    this.isGhost = isGhost;
-    this.directory = directory;
-    this.file = new File(directory, name + (name.endsWith(".yml") ? "" : ".yml"));
-    this.stream = () -> FileUtils.findStream(plugin, file);
-    this.options = new DynamicConfigurationOptions<>(this);
-    this.configurationDirectory = DynamicConfigurationManager.getConfigurationDirectory(directory);
-    if(!file.exists()) regenerate();
-    reload();
-    adapter.gson(GSON);
-    DynamicConfigurationManager.addConfiguration(this);
-  }
-  public DynamicJsonConfiguration(JavaPlugin plugin, File directory, String name) {
-    this(plugin, false, directory, name);
-  }
+	public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, File directory, String resourceName, String name) {
+		this.plugin = plugin;
+		String split = name.contains("/") ? "/" : File.pathSeparator;
+		String substring = name.contains(split) ? name.substring(0, name.lastIndexOf(split)) : name;
+		if(directory == null) {
+			if(name.contains(split)) directory = new File(substring);
+			else directory = new File(plugin!=null? plugin.getDataFolder()+"":"");
+		}
+		if(name.contains("/")) {
+			if(!directory.getPath().endsWith(substring))
+				directory = new File(directory, substring);
+			name = name.substring(name.lastIndexOf(split) + 1);
+		}
+		this.isGhost = isGhost;
+		this.directory = directory;
+		this.file = new File(directory, name + (name.endsWith(".yml") ? "" : ".yml"));
+		this.stream = () -> FileUtils.findStream(plugin, new File(resourceName));
+		this.options = new DynamicConfigurationOptions<>(this);
+		this.configurationDirectory = DynamicConfigurationManager.getConfigurationDirectory(directory);
+		if(!file.exists()) regenerate();
+		reload();
+		DynamicConfigurationManager.addConfiguration(this);
+	}
 
-  public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, String directory, String name) {
-    this(plugin, isGhost, directory == null || directory.isEmpty() ? null : new File(directory), name);
-  }
+	public DynamicJsonConfiguration(JavaPlugin plugin, File directory, String name) {
+		this(plugin, false, directory, name, name);
+	}
+
+	public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, File directory, String name) {
+		this(plugin, isGhost, directory, name, name);
+	}
+
+	public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, String directory, String name) {
+		this(plugin, isGhost, directory == null || directory.isEmpty() ? null : new File(directory), name, name);
+	}
 
 
-  public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
-    this(plugin, false, directory, name);
-  }
+	public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String name) {
+		this(plugin, false, directory, name, name);
+	}
 
-  public DynamicJsonConfiguration(boolean isGhost, String name) {
-    this(null, isGhost, (File)null, name);
-  }
+	public DynamicJsonConfiguration(boolean isGhost, String name) {
+		this(null, isGhost, (File)null, name, name);
+	}
 
-  public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, DynamicConfigurationDirectory directory, String name) {
-    this(plugin, isGhost, directory == null ? null : directory.directory(), name);
-    if(directory != null) configurationDirectory(directory);
-  }
-  public DynamicJsonConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
-    this(plugin, false, directory == null ? null : directory.directory(), name);
-    if(directory != null) configurationDirectory(directory);
-  }
+	public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, DynamicConfigurationDirectory directory, String name) {
+		this(plugin, isGhost, directory == null ? null : directory.directory(), name, name);
+		if(directory != null) configurationDirectory(directory);
+	}
+	public DynamicJsonConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
+		this(plugin, false, directory == null ? null : directory.directory(), name, name);
+		if(directory != null) configurationDirectory(directory);
+	}
 
-  public DynamicJsonConfiguration(JavaPlugin plugin, DynamicConfigurationManager.InputStreamSupplier inputStream, String name) {
-    this(plugin, true, "", name);
-    this.stream = inputStream;
-    reload();
-  }
+	public DynamicJsonConfiguration(JavaPlugin plugin, DynamicConfigurationManager.InputStreamSupplier inputStream, String name) {
+		this(plugin, true, "", name);
+		this.stream = inputStream;
+		reload();
+	}
+	public DynamicJsonConfiguration(JavaPlugin plugin, File directory, String resourceName, String name) {
+		this(plugin, false, directory, resourceName, name);
+	}
+
+	public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, String directory, String resourceName, String name) {
+		this(plugin, isGhost, directory == null || directory.isEmpty() ? null : new File(directory), resourceName, name);
+	}
+
+
+	public DynamicJsonConfiguration(JavaPlugin plugin, String directory, String resourceName, String name) {
+		this(plugin, false, directory, resourceName, name);
+	}
+
+	public DynamicJsonConfiguration(boolean isGhost, String resourceName, String name) {
+		this(null, isGhost, (File)null, resourceName, name);
+	}
+
+	public DynamicJsonConfiguration(JavaPlugin plugin, boolean isGhost, DynamicConfigurationDirectory directory, String resourceName, String name) {
+		this(plugin, isGhost, directory == null ? null : directory.directory(), resourceName, name);
+		if(directory != null) configurationDirectory(directory);
+	}
+	public DynamicJsonConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String resourceName, String name) {
+		this(plugin, false, directory == null ? null : directory.directory(), resourceName, name);
+		if(directory != null) configurationDirectory(directory);
+	}
 
   @Override
   public DynamicConfigurationDirectory configurationDirectory() {
@@ -241,7 +270,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     return this;
   }
 
-  private HashSet<String> keys(IDynamicConfigurationSection map, HashSet<String> keys) {
+  private List<String> keys(IDynamicConfigurationSection map, List<String> keys) {
     for(String s : map.data().keySet()) {
       keys.add(s);
       if(map.get(s) instanceof IDynamicConfigurationSection) keys.addAll(((IDynamicConfigurationSection) map.get(s))
@@ -251,9 +280,9 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   }
 
   @Override
-  public Set<String> getKeys(boolean deep) {
-    if(!deep) return data.keySet();
-    return keys(this, new HashSet<>());
+  public List<String> getKeys(boolean deep) {
+    if(!deep) return data.keySet().stream().sorted().collect(Collectors.toList());;
+    return keys(this, new ArrayList<>());
   }
 
   @Override
@@ -294,8 +323,8 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     for(int i = 0; i < paths.length; i++) {
       String lastKey = paths[i];
       if(i == paths.length - 1) {
-        if(value instanceof DynamicYamlConfigurationSectionImpl && start != this)
-          ((DynamicYamlConfigurationSectionImpl) value).parent(start);
+        if(value instanceof DynamicJsonConfigurationSection && start != this)
+          ((DynamicJsonConfigurationSection) value).parent(start);
         start.set(lastKey, value);
       } else {
         if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
@@ -358,19 +387,16 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
     return data.getOrDefault(path, defaultValue);
   }
 
-
-  @Override
-  public <T> T get(Class<T> deserializeType, String path) {
-    if(!DynamicConfigurationManager.hasSerializer(deserializeType)) return null;
-    IDynamicConfigurationSerializer<T> serializer = DynamicConfigurationManager.serializer(deserializeType);
-    if(serializer instanceof IDynamicConfigurationStringSerializer)
-      return ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
-    return (T) serializer.deserialize(getSection(path) == null ? this : getSection(path));
-  }
-
   @Override
   public <T> T get(Class<T> deserializeType, String path, T defaultValue) {
-    return null;
+	  if(!DynamicConfigurationManager.hasSerializer(deserializeType)) return null;
+	  IDynamicConfigurationSerializer<T> serializer = DynamicConfigurationManager.serializer(deserializeType);
+	  T deserializedValue = null;
+	  if(serializer instanceof IDynamicConfigurationStringSerializer) {
+		  if(getString(path) != null)
+			  deserializedValue = ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
+	  } else deserializedValue = serializer.deserialize(getSection(path) == null ? this : getSection(path));
+	  return deserializedValue == null ? defaultValue : deserializedValue;
   }
 
   @Override

@@ -28,21 +28,21 @@ public class DynamicConfigurationManager {
   public static boolean DEBUG_ENABLED = false;
 
   static {
-    registerExtension(".yml", (plugin, directory, name) -> {
-      if(directory instanceof File) return new DynamicYamlConfiguration(plugin, false, (File) directory, name);
+    registerExtension(".yml", (plugin, directory, resourceName, name) -> {
+      if(directory instanceof File) return new DynamicYamlConfiguration(plugin, false, (File) directory, resourceName, name);
       if(directory instanceof DynamicConfigurationDirectory)
-        return new DynamicYamlConfiguration(plugin, (DynamicConfigurationDirectory) directory, name);
+        return new DynamicYamlConfiguration(plugin, (DynamicConfigurationDirectory) directory, resourceName, name);
       if(directory instanceof InputStreamSupplier)
         return new DynamicYamlConfiguration(plugin, (InputStreamSupplier) directory, name);
-      return new DynamicYamlConfiguration(plugin, "", name);
+      return new DynamicYamlConfiguration(plugin, "", resourceName, name);
     });
-    registerExtension(".json", (plugin, directory, name) -> {
-      if(directory instanceof File) return new DynamicJsonConfiguration(plugin, (File) directory, name);
+    registerExtension(".json", (plugin, directory, resourceName, name) -> {
+      if(directory instanceof File) return new DynamicJsonConfiguration(plugin, (File) directory, resourceName, name);
       if(directory instanceof DynamicConfigurationDirectory)
-        return new DynamicJsonConfiguration(plugin, (DynamicConfigurationDirectory) directory, name);
+        return new DynamicJsonConfiguration(plugin, (DynamicConfigurationDirectory) directory, resourceName, name);
       if(directory instanceof InputStreamSupplier)
         return new DynamicJsonConfiguration(plugin, (InputStreamSupplier) directory, name);
-      return new DynamicJsonConfiguration(plugin, "", name);
+      return new DynamicJsonConfiguration(plugin, "", resourceName, name);
     });
   }
 
@@ -104,57 +104,72 @@ public class DynamicConfigurationManager {
     return null;
   }
 
-  public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, String name) {
-    return createConfiguration(plugin, name.contains("/") ? null : plugin.getDataFolder(), name);
-  }
+	public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, String name) {
+		return createConfiguration(plugin, name.contains("/") ? null : plugin.getDataFolder(), name);
+	}
 
-  public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, File directory, String name) {
-    IDynamicConfiguration config = getConfiguration(name);
-    if(config == null) config = getConfiguration((directory != null ? directory.getPath() + "/" : "") + name);
-    if(config == null) {
-      if(name.lastIndexOf('.') != -1) {
-        String extension = name.substring(name.lastIndexOf('.'));
-        if(CONFIG_EXTENSION_REGISTER.containsKey(extension))
-          return CONFIG_EXTENSION_REGISTER.get(extension).create(plugin, directory, name);
-      }
-      return new DynamicYamlConfiguration(plugin, directory, name);
-    }
-    return config;
-  }
+	public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, File directory, String name) {
+		return createConfiguration(plugin, directory, name,name);
+	}
 
-  public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, String directory, String name) {
-    return createConfiguration(plugin, directory == null ? null : new File(directory), name);
-  }
 
-  public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
-    IDynamicConfiguration config = getConfiguration(name);
-    if(config == null) config = getConfiguration(name);
-    if(config == null) {
-      String extension = name.substring(name.lastIndexOf('.'));
-      if(CONFIG_EXTENSION_REGISTER.containsKey(extension))
-        return CONFIG_EXTENSION_REGISTER.get(extension).create(plugin, directory, name);
-      else return new DynamicYamlConfiguration(plugin, directory, name);
-    }
-    return config;
-  }
+	public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, File directory, String resourceName, String name) {
+		IDynamicConfiguration config = getConfiguration(name);
+		if(config == null) config = getConfiguration((directory != null ? directory.getPath() + "/" : "") + name);
+		if(config == null) {
+			if(name.lastIndexOf('.') != -1) {
+				String extension = name.substring(name.lastIndexOf('.'));
+				if(CONFIG_EXTENSION_REGISTER.containsKey(extension))
+					return CONFIG_EXTENSION_REGISTER.get(extension).create(plugin, directory, resourceName, name);
+			}
+			return new DynamicYamlConfiguration(plugin, directory, name);
+		}
+		return config;
+	}
 
-  public static IDynamicConfiguration   createGhostConfiguration(JavaPlugin plugin, String fileName, String configName) {
-    String extension = fileName.substring(fileName.lastIndexOf('.'));
-    if(CONFIG_EXTENSION_REGISTER.containsKey(extension))
-      return CONFIG_EXTENSION_REGISTER.get(extension).create(plugin, (InputStreamSupplier) () -> FileUtils.findStream(plugin, new File(fileName)), configName);
-    else return new DynamicYamlConfiguration(plugin, () -> FileUtils.findStream(plugin, new File(fileName)), configName);
-  }
+	public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, String directory, String name) {
+		return createConfiguration(plugin, directory, name, name);
+	}
 
-  public static IDynamicConfiguration createGhostConfiguration(JavaPlugin plugin, String name, InputStreamSupplier inputStream) {
-    String extension = name.substring(name.lastIndexOf('.'));
-    if(CONFIG_EXTENSION_REGISTER.containsKey(extension))
-      return CONFIG_EXTENSION_REGISTER.get(extension).create(plugin, inputStream, name);
-    else return new DynamicYamlConfiguration(plugin, inputStream, name);
-  }
+	public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, String directory, String resourceName, String name) {
+		return createConfiguration(plugin, directory == null ? null : new File(directory), resourceName, name);
+	}
+
+	public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
+		return createConfiguration(plugin, directory, name, name);
+	}
+	public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String resourceName, String name) {
+		IDynamicConfiguration config = getConfiguration(name);
+		if(config == null) config = getConfiguration(name);
+		if(config == null) {
+			String extension = name.substring(name.lastIndexOf('.'));
+			if(CONFIG_EXTENSION_REGISTER.containsKey(extension))
+				return CONFIG_EXTENSION_REGISTER.get(extension).create(plugin, directory, resourceName, name);
+			else return new DynamicYamlConfiguration(plugin, directory, resourceName, name);
+		}
+		return config;
+	}
+
+	public static IDynamicConfiguration createGhostConfiguration(JavaPlugin plugin, String fileName, String configName) {
+		return createGhostConfiguration(plugin, fileName, fileName,configName);
+	}
+	public static IDynamicConfiguration createGhostConfiguration(JavaPlugin plugin, String resourceName, String fileName, String configName) {
+		String extension = fileName.substring(fileName.lastIndexOf('.'));
+		if(CONFIG_EXTENSION_REGISTER.containsKey(extension))
+			return CONFIG_EXTENSION_REGISTER.get(extension).create(plugin, (InputStreamSupplier) () -> FileUtils.findStream(plugin, new File(resourceName)), resourceName, configName);
+		else return new DynamicYamlConfiguration(plugin, () -> FileUtils.findStream(plugin, new File(resourceName)), configName);
+	}
+
+	public static IDynamicConfiguration createGhostConfiguration(JavaPlugin plugin, String name, InputStreamSupplier inputStream) {
+		String extension = name.lastIndexOf('.') == -1 ? name : name.substring(name.lastIndexOf('.'));
+		if(CONFIG_EXTENSION_REGISTER.containsKey(extension))
+			return CONFIG_EXTENSION_REGISTER.get(extension).create(plugin, inputStream, null, name);
+		else return new DynamicYamlConfiguration(plugin, inputStream, name);
+	}
 
   public static boolean isMissingKeys(IDynamicConfiguration configuration, IDynamicConfiguration ghostConfiguration) {
-    Set<String> list1 = ghostConfiguration.getKeys(true);
-    Set<String> list2 = configuration.getKeys(true);
+    List<String> list1 = ghostConfiguration.getKeys(true);
+    List<String> list2 = configuration.getKeys(true);
     list1.removeAll(list2);
     return !list1.isEmpty();
   }
@@ -165,8 +180,8 @@ public class DynamicConfigurationManager {
   }
 
   public static boolean appendMissingKeysFromTo(IDynamicConfiguration ghostConfiguration, IDynamicConfiguration configuration) {
-    Set<String> list1 = ghostConfiguration.getKeys(true);
-    Set<String> list2 = configuration.getKeys(true);
+    List<String> list1 = ghostConfiguration.getKeys(true);
+    List<String> list2 = configuration.getKeys(true);
     list1.removeAll(list2);
     if(!list1.isEmpty()) {
       if(DEBUG_ENABLED) Bukkit.getServer().getLogger().log(Level.INFO, "Found missing keys"+list1+" in file '" + configuration.file() + "'");
@@ -200,11 +215,15 @@ public class DynamicConfigurationManager {
     return CONFIGURATIONS;
   }
 
-  public interface ConfigCreate {
-    IDynamicConfiguration create(JavaPlugin plugin, Object directory, String name);
-  }
+	public static boolean hasRegister(String extension) {
+		return CONFIG_EXTENSION_REGISTER.containsKey(extension);
+	}
 
-  public interface InputStreamSupplier {
+	public interface ConfigCreate {
+		IDynamicConfiguration create(JavaPlugin plugin, Object directory, String resourceName, String name);
+	}
+
+	public interface InputStreamSupplier {
     InputStream get();
   }
 }

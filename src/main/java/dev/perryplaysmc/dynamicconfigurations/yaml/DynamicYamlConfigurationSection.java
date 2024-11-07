@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  * Created: 10/2021
  **/
 
-public class DynamicYamlConfigurationSectionImpl implements IDynamicConfigurationSection {
+public class DynamicYamlConfigurationSection implements IDynamicConfigurationSection {
 
   private final DynamicYamlConfiguration configuration;
   private final String id;
@@ -20,11 +20,11 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
   private IDynamicConfigurationSection parent;
   private String lastPath = "";
 
-  protected DynamicYamlConfigurationSectionImpl(DynamicYamlConfiguration configuration, String id, Map<String, Object> data) {
+  protected DynamicYamlConfigurationSection(DynamicYamlConfiguration configuration, String id, Map<String, Object> data) {
     this(configuration, null, id, data);
   }
 
-  protected DynamicYamlConfigurationSectionImpl(DynamicYamlConfiguration configuration, IDynamicConfigurationSection parent, String id, Map<String, Object> data) {
+  protected DynamicYamlConfigurationSection(DynamicYamlConfiguration configuration, IDynamicConfigurationSection parent, String id, Map<String, Object> data) {
     this.configuration = configuration;
     this.parent = parent;
     this.id = id;
@@ -81,7 +81,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
     return this;
   }
 
-  private HashSet<String> keys(IDynamicConfigurationSection map, HashSet<String> keys) {
+  private List<String> keys(IDynamicConfigurationSection map, List<String> keys) {
     for(String s : map.data().keySet()) {
       keys.add(s);
       if(map.get(s) instanceof IDynamicConfigurationSection) keys.addAll(((IDynamicConfigurationSection) map.get(s))
@@ -91,9 +91,9 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
   }
 
   @Override
-  public Set<String> getKeys(boolean deep) {
-    if(!deep) return data.keySet();
-    return keys(this, new HashSet<>());
+  public List<String> getKeys(boolean deep) {
+    if(!deep) return data.keySet().stream().sorted().collect(Collectors.toList());
+    return keys(this, new ArrayList<>());
   }
 
   @Override
@@ -122,7 +122,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
         if(serializer instanceof IDynamicConfigurationStringSerializer)
           data.put(paths[0], ((IDynamicConfigurationStringSerializer<Object>) serializer).serialize(value));
         else {
-          IDynamicConfigurationSection section = new DynamicYamlConfigurationSectionImpl(configuration, this, path, new HashMap<>());
+          IDynamicConfigurationSection section = new DynamicYamlConfigurationSection(configuration, this, path, new HashMap<>());
           data.put(path, section);
           serializer.serialize(section, value);
         }
@@ -135,12 +135,12 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
     for(int i = 0; i < paths.length; i++) {
       String lastKey = paths[i];
       if(i == paths.length - 1) {
-        if(value instanceof DynamicYamlConfigurationSectionImpl && start != this)
-          ((DynamicYamlConfigurationSectionImpl) value).parent(start);
+        if(value instanceof DynamicYamlConfigurationSection && start != this)
+          ((DynamicYamlConfigurationSection) value).parent(start);
         start.set(lastKey, value);
       } else {
         if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
-          start.set(lastKey, new DynamicYamlConfigurationSectionImpl(configuration, start == this ? null : start, lastKey, new LinkedHashMap<>()));
+          start.set(lastKey, new DynamicYamlConfigurationSection(configuration, start == this ? null : start, lastKey, new LinkedHashMap<>()));
         start = (IDynamicConfigurationSection) start.get(lastKey);
       }
     }
@@ -199,13 +199,14 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
 
   @Override
   public <T> T get(Class<T> deserializeType, String path, T defaultValue) {
-    if(!DynamicConfigurationManager.hasSerializer(deserializeType)) return null;
-    IDynamicConfigurationSerializer<T> serializer = DynamicConfigurationManager.serializer(deserializeType);
-    T deserializedValue = null;
-    if(serializer instanceof IDynamicConfigurationStringSerializer)
-      deserializedValue = ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
-    else deserializedValue = (T) serializer.deserialize(getSection(path) == null ? this : getSection(path));
-    return deserializedValue == null ? defaultValue : deserializedValue;
+	  if(!DynamicConfigurationManager.hasSerializer(deserializeType)) return null;
+	  IDynamicConfigurationSerializer<T> serializer = DynamicConfigurationManager.serializer(deserializeType);
+	  T deserializedValue = null;
+	  if(serializer instanceof IDynamicConfigurationStringSerializer) {
+		  if(getString(path) != null)
+			  deserializedValue = ((IDynamicConfigurationStringSerializer<T>) serializer).deserialize(getString(path));
+	  } else deserializedValue = serializer.deserialize(getSection(path) == null ? this : getSection(path));
+	  return deserializedValue == null ? defaultValue : deserializedValue;
   }
 
   @Override
@@ -217,7 +218,7 @@ public class DynamicYamlConfigurationSectionImpl implements IDynamicConfiguratio
   public IDynamicConfigurationSection createSection(String path) {
     IDynamicConfigurationSection sec = getSection(path);
     if(sec == null)
-      set(path, sec = new DynamicYamlConfigurationSectionImpl(configuration, path.contains(".") ? path.substring(path.lastIndexOf('.') + 1) : path, new LinkedHashMap<>()));
+      set(path, sec = new DynamicYamlConfigurationSection(configuration, path.contains(".") ? path.substring(path.lastIndexOf('.') + 1) : path, new LinkedHashMap<>()));
     return sec;
   }
 

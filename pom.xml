@@ -6,7 +6,7 @@
 
     <groupId>dev.perryplaysmc.dynamicconfigurations</groupId>
     <artifactId>DynamicConfigurations</artifactId>
-    <version>1.4.3</version>
+    <version>1.4.4</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -18,15 +18,31 @@
             <id>Spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
+      <repository>
+        <id>sonatypeSnapshots</id>
+        <name>Sonatype Snapshots</name>
+        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        <releases>
+          <enabled>false</enabled>
+        </releases>
+        <snapshots>
+          <enabled>true</enabled>
+        </snapshots>
+      </repository>
     </repositories>
 
     <dependencies>
-        <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.18-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
+      <dependency>
+        <groupId>de.articdive</groupId>
+        <artifactId>jnoise-pipeline</artifactId>
+        <version>4.1.0</version>
+      </dependency>
+      <dependency>
+          <groupId>org.spigotmc</groupId>
+          <artifactId>spigot-api</artifactId>
+          <version>1.19-R0.1-SNAPSHOT</version>
+          <scope>provided</scope>
+      </dependency>
     </dependencies>
 
 </project>
