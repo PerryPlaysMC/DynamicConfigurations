@@ -65,7 +65,6 @@ public class YamlArrayPreserver {
       Object[] array = (Object[]) data;
       Method method = ReflectionUtil.findMethod(Representer.class, new String[]{"representSequence"}, new Class[]{Tag.class, Iterable.class, boolean.class}
          , new Class[]{Tag.class, Iterable.class, DumperOptions.FlowStyle.class});
-      System.out.println(method + " : " + Arrays.toString(array));
       return (Node) ReflectionUtil.invokeMethod(method, representer,Tag.SEQ, Arrays.asList(array), (method == null) ? false : (method.getParameterTypes()[2].getName().contains("boolean") ? false : DumperOptions.FlowStyle.FLOW));
     }
   }

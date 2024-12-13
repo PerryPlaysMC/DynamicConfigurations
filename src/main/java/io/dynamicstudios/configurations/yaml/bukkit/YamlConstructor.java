@@ -72,7 +72,6 @@ public class YamlConstructor {
 					currentText.appendCodePoint(buffer[Math.max(start, 0)]);
 					++start;
 				}
-				System.out.println("TEXT: " + currentText);
 				if(currentText.length() > 0)
 					if (seqNode.getTag().equals(YamlConstructor.ARRAY) || (currentText.charAt(0) == '[' && currentText.charAt(currentText.length()-1) == ']')) {
 						Method constructSequenceMethod = ReflectionUtil.findMethod(BaseConstructor.class, new String[]{"constructSequence"}, new Class<?>[]{SequenceNode.class});

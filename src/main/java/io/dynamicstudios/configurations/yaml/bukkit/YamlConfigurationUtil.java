@@ -99,7 +99,6 @@ public class YamlConfigurationUtil extends FileConfiguration {
   public static YamlConfigurationUtil loadConfiguration(String contents) throws InvalidConfigurationException {
     YamlConfigurationUtil config = new YamlConfigurationUtil();
     config.loadFromString(contents);
-    System.out.println("LOADING: \n\n" + contents);
     return config;
   }
 
@@ -146,7 +145,6 @@ public class YamlConfigurationUtil extends FileConfiguration {
         dump = "";
       }
       header += dump;
-      System.out.println("SAVING: \n\n" + header);
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     } catch (Exception e) {
@@ -288,7 +286,6 @@ public class YamlConfigurationUtil extends FileConfiguration {
       YamlConstructor.apply((SafeConstructor) constructorField.get(yaml));
       YamlArrayPreserver.apply(rep);
       input = (Map<?, ?>) yaml.load(contents);
-      System.out.println(input);
     } catch(YAMLException e) {
       throw new InvalidConfigurationException(e);
     } catch(ClassCastException e) {
