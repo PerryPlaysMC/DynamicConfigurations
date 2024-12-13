@@ -346,6 +346,7 @@ public class DynamicYamlConfigurationSection implements IDynamicConfigurationSec
   @Override
   public List<?> getList(String path, List<?> defaultValue) {
     Object value = get(path);
+    if(value instanceof Object[]) return Arrays.asList((Object[]) value);
     return !(value instanceof List) ? defaultValue : (List<?>) value;
   }
 

@@ -61,6 +61,7 @@ public class DynamicConfigurationManager {
   public static void registerExtension(String extension, ConfigCreate clazz) {
     if(DEBUG_ENABLED) Bukkit.getServer().getLogger().log(Level.INFO, "Registering file extension: '" + extension + "'");
     CONFIG_EXTENSION_REGISTER.put((extension.startsWith(".") ? "" : ".") + extension, clazz);
+    CONFIG_EXTENSION_REGISTER.put(extension.substring(extension.startsWith(".") ? 1 : 0), clazz);
   }
 
   public static void registerSerializer(IDynamicConfigurationSerializer<?> serializer) {

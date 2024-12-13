@@ -53,6 +53,8 @@ public class DynamicConfigurationDirectory {
 	    String[] name = file.getName().split("\\.");
 	    if(DynamicConfigurationManager.hasRegister(name[name.length-1]))
 		    configurations.add(DynamicConfigurationManager.createConfiguration(plugin, this, file.getName()));
+	    else if(DynamicConfigurationManager.hasRegister("." + name[name.length-1]))
+		    configurations.add(DynamicConfigurationManager.createConfiguration(plugin, this, file.getName()));
     }
     return this;
   }
