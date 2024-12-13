@@ -87,7 +87,6 @@ public class FileUtils {
 
 	public static String generateNewConfigString(IDynamicConfiguration configuration, DynamicConfigurationOptions<?> options, Map<String, String> comments, Map<String, String> inlineComments) {
 		String configString = configuration.saveToString();
-		Logger.getLogger("DynamicStudios").log(Level.INFO, "Saving: {}", configString);
 		List<String> pathList = new ArrayList<>();
 		Pattern pattern = Pattern.compile("^\\s*-?\\s*([^\\s:]+:)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 		List<String> lines = getLines(configString, (string) -> pattern.matcher(string).find(), (string) -> !string.replaceAll("\\s", "").startsWith("#"));

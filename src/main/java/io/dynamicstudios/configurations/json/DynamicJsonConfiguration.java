@@ -13,6 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -191,7 +192,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   @Override
   public Map<String, String> comments() {
     if(DynamicConfigurationManager.DEBUG_ENABLED)
-      Bukkit.getLogger().log(Level.WARNING,
+     Logger.getLogger("DynamicStudios").log(Level.WARNING,
         "Comments are not supported in json files("+file()+"): " + DynamicConfigurationManager.getStackTrace());
     return EMPTY_COMMENTS;
   }
@@ -199,7 +200,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   @Override
   public Map<String, String> inlineComments() {
     if(DynamicConfigurationManager.DEBUG_ENABLED)
-      Bukkit.getLogger().log(Level.WARNING,
+     Logger.getLogger("DynamicStudios").log(Level.WARNING,
         "Comments are not supported in json files("+file()+"): " + DynamicConfigurationManager.getStackTrace());
     return EMPTY_COMMENTS;
   }
@@ -337,7 +338,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   @Override
   public IDynamicConfigurationSection set(String path, Object value, String comment) {
     if(DynamicConfigurationManager.DEBUG_ENABLED)
-      Bukkit.getLogger().log(Level.WARNING,
+     Logger.getLogger("DynamicStudios").log(Level.WARNING,
         "Comments are not supported in json files: ("+file()+")" + DynamicConfigurationManager.getStackTrace() + " '" + path + "'");
     return set(path, value);
   }
@@ -345,7 +346,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   @Override
   public IDynamicConfigurationSection setInline(String path, Object value, String comment) {
     if(DynamicConfigurationManager.DEBUG_ENABLED)
-      Bukkit.getLogger().log(Level.WARNING,
+     Logger.getLogger("DynamicStudios").log(Level.WARNING,
         "Comments are not supported in json files: ("+file()+")" + DynamicConfigurationManager.getStackTrace() + " '" + path + "'");
     return set(path, value);
   }
@@ -353,7 +354,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   @Override
   public IDynamicConfigurationSection comment(String... comment) {
     if(DynamicConfigurationManager.DEBUG_ENABLED)
-      Bukkit.getLogger().log(Level.WARNING,
+     Logger.getLogger("DynamicStudios").log(Level.WARNING,
         "Comments are not supported in json files("+file()+"): " + DynamicConfigurationManager.getStackTrace());
     return this;
   }
@@ -361,7 +362,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   @Override
   public IDynamicConfigurationSection inlineComment(String... comment) {
     if(DynamicConfigurationManager.DEBUG_ENABLED)
-      Bukkit.getLogger().log(Level.WARNING,
+     Logger.getLogger("DynamicStudios").log(Level.WARNING,
         "Comments are not supported in json files("+file()+"): " + DynamicConfigurationManager.getStackTrace());
     return this;
   }
@@ -414,7 +415,7 @@ public class DynamicJsonConfiguration implements IDynamicConfiguration {
   @Override
   public IDynamicConfigurationSection createSection(String path, String comment) {
     if(DynamicConfigurationManager.DEBUG_ENABLED)
-      Bukkit.getLogger().log(Level.WARNING,
+     Logger.getLogger("DynamicStudios").log(Level.WARNING,
         "Comments are not supported in json files: ("+file()+")" + DynamicConfigurationManager.getStackTrace() + " '" + path + "'");
     return createSection(path);
   }

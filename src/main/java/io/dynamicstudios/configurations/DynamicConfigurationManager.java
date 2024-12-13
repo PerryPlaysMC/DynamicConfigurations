@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.*;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -59,7 +60,7 @@ public class DynamicConfigurationManager {
   }
 
   public static void registerExtension(String extension, ConfigCreate clazz) {
-    if(DEBUG_ENABLED) Bukkit.getServer().getLogger().log(Level.INFO, "Registering file extension: '" + extension + "'");
+    if(DEBUG_ENABLED) Logger.getLogger("DynamicStudios").log(Level.INFO, "Registering file extension: '" + extension + "'");
     CONFIG_EXTENSION_REGISTER.put((extension.startsWith(".") ? "" : ".") + extension, clazz);
     CONFIG_EXTENSION_REGISTER.put(extension.substring(extension.startsWith(".") ? 1 : 0), clazz);
   }
@@ -184,7 +185,7 @@ public class DynamicConfigurationManager {
     List<String> list2 = configuration.getKeys(true);
     list1.removeAll(list2);
     if(!list1.isEmpty()) {
-      if(DEBUG_ENABLED) Bukkit.getServer().getLogger().log(Level.INFO, "Found missing keys"+list1+" in file '" + configuration.file() + "'");
+	    if(DEBUG_ENABLED) Logger.getLogger("DynamicStudios").log(Level.INFO, "Found missing keys"+list1+" in file '" + configuration.file() + "'");
       boolean autoSave = configuration.options().autoSave();
       configuration.options().autoSave(false);
       for(String s : list1) {
