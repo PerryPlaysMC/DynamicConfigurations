@@ -53,7 +53,7 @@ public class FileUtils {
 			Scanner scanner = new Scanner(inputStream);
 			StringBuilder lines = new StringBuilder();
 			while(scanner.hasNextLine()) lines.append("\n").append(scanner.nextLine());
-			if(lines.length() < 0) return new ArrayList<>();
+			if(lines.toString().replaceAll("\\s","").isEmpty()) return new ArrayList<>();
 			return Arrays.asList(lines.substring(1).split("\n"));
 		} catch (Exception e) {
 			e.printStackTrace();

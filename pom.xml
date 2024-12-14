@@ -6,7 +6,7 @@
 
     <groupId>io.dynamicstudios.configurations</groupId>
     <artifactId>DynamicConfigurations</artifactId>
-    <version>1.5.0</version>
+    <version>1.5.1</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
