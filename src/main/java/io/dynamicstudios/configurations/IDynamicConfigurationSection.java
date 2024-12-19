@@ -257,6 +257,46 @@ public interface IDynamicConfigurationSection {
    */
   Integer getInteger(String path, Integer defaultValue);
 
+
+  /**
+   * Get a Integer from the config
+   *
+   * @param path The path where the Integer is located
+   * @return The Integer from the config, null if not set
+   */
+  default Long getLong(String path){
+    return getLong(path, options().defaults() == null ? null : options().defaults().getLong(path));
+  }
+
+  /**
+   * Get a Integer from the config
+   *
+   * @param path         The path where the Integer is located
+   * @param defaultValue If the path is not set, return defaultValue
+   * @return The Integer from the config, defaultValue if not set
+   */
+  Long getLong(String path, Long defaultValue);
+
+
+  /**
+   * Get a Integer from the config
+   *
+   * @param path The path where the Integer is located
+   * @return The Integer from the config, null if not set
+   */
+  default Number getNumber(String path){
+    return getNumber(path, options().defaults() == null ? null : options().defaults().getNumber(path));
+  }
+
+  /**
+   * Get a Integer from the config
+   *
+   * @param path         The path where the Integer is located
+   * @param defaultValue If the path is not set, return defaultValue
+   * @return The Integer from the config, defaultValue if not set
+   */
+  Number getNumber(String path, Number defaultValue);
+
   /**
    * Get a Float from the config
    *
