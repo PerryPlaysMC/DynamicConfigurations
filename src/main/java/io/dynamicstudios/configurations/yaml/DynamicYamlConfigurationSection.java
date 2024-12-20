@@ -4,6 +4,7 @@ import io.dynamicstudios.configurations.*;
 import io.dynamicstudios.configurations.utils.DynamicConfigurationOptions;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -75,6 +76,13 @@ public class DynamicYamlConfigurationSection extends DefaultDynamicConfiguration
     return this;
   }
 
+
+
+  public IDynamicConfigurationSection autoSave() {
+    configuration.autoSave();
+    return this;
+  }
+
   @Override
   public IDynamicConfigurationSection reload() {
     configuration.reload();
@@ -127,11 +135,11 @@ public class DynamicYamlConfigurationSection extends DefaultDynamicConfiguration
           data.put(path, section);
           serializer.serialize(section, value);
         }
-        return configuration.options().autoSave() ? save() : this;
+        return autoSave();
       }
       if(value == null) data.remove(paths[0]);
       else data.put(paths[0], value);
-      return configuration.options().autoSave() ? save() : this;
+      return autoSave();
     }
     for(int i = 0; i < paths.length; i++) {
       String lastKey = paths[i];
@@ -146,7 +154,7 @@ public class DynamicYamlConfigurationSection extends DefaultDynamicConfiguration
       }
     }
     lastPath = path;
-    return configuration.options().autoSave() ? save() : this;
+    return autoSave();
   }
 
   @Override

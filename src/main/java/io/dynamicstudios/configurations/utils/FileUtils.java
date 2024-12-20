@@ -2,6 +2,7 @@ package io.dynamicstudios.configurations.utils;
 
 import io.dynamicstudios.configurations.IDynamicConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.spigotmc.CustomTimingsHandler;
 
 import java.io.*;
 import java.util.*;
@@ -18,6 +19,8 @@ import java.util.regex.Pattern;
 public class FileUtils {
 
 	private static final HashMap<String, String> INPUTSTREAM_CACHE = new HashMap<>();
+
+	private static final Pattern LINE_DETECTOR = Pattern.compile("^\\s*-?\\s*([^\\s:]+:)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
 	/**
 	 * @group 1 = Spacing
@@ -88,8 +91,7 @@ public class FileUtils {
 	public static String generateNewConfigString(IDynamicConfiguration configuration, DynamicConfigurationOptions<?> options, Map<String, String> comments, Map<String, String> inlineComments) {
 		String configString = configuration.saveToString();
 		List<String> pathList = new ArrayList<>();
-		Pattern pattern = Pattern.compile("^\\s*-?\\s*([^\\s:]+:)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-		List<String> lines = getLines(configString, (string) -> pattern.matcher(string).find(), (string) -> !string.replaceAll("\\s", "").startsWith("#"));
+		List<String> lines = getLines(configString, LINE_DETECTOR.asPredicate(), (string) -> !string.matches("\\s*#"));
 		StringBuilder builder = new StringBuilder();
 		int lastIndent = -1, indents = options.indent();
 		int currentIndent, start, end, initialStart;
@@ -98,14 +100,14 @@ public class FileUtils {
 		Character wrapWith = options.stringWrap().wrapWith();
 		String defaultIndentLength = options.indentString();
 		for(String currentLine : lines) {
+			long startTime = System.currentTimeMillis();
 			currentIndent = 0;
 			initialStart = -1;
 			start = -1;
 			end = -1;
 			indentString = "";
 			configValue = new StringBuilder();
-			if(currentLine.isEmpty() || currentLine.replaceAll("\\s", "").startsWith("#") || currentLine.replaceAll("\\s", "").isEmpty())
-				continue;
+			if(currentLine.isEmpty() || currentLine.replaceAll("\\s", "").startsWith("#") || currentLine.replaceAll("\\s", "").isEmpty()) continue;
 			StringBuilder originalLine = new StringBuilder(currentLine);
 			Matcher matcher = LINE_PATH_VALUE_DETECTOR.matcher(currentLine);
 			if(matcher.find()) {

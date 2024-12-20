@@ -12,6 +12,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -22,6 +26,9 @@ import java.util.stream.Collectors;
  **/
 
 public class DynamicJsonConfiguration extends DefaultDynamicConfigurationSectionImpl implements IDynamicConfiguration {
+	protected ScheduledExecutorService autoSaveService = Executors.newSingleThreadScheduledExecutor();
+	protected ScheduledFuture autoSaveTask = null;
+	
   private final File file;
   private final JavaPlugin plugin;
   private final DynamicConfigurationOptions<DynamicJsonConfiguration> options;
@@ -280,7 +287,7 @@ public class DynamicJsonConfiguration extends DefaultDynamicConfigurationSection
 
   @Override
   public List<String> getKeys(boolean deep) {
-    if(!deep) return data.keySet().stream().sorted().collect(Collectors.toList());;
+    if(!deep) return data.keySet().stream().sorted().collect(Collectors.toList());
     return keys(this, new ArrayList<>());
   }
 
@@ -314,11 +321,11 @@ public class DynamicJsonConfiguration extends DefaultDynamicConfigurationSection
           data.put(path, section);
           serializer.serialize(section, value);
         }
-        return options.autoSave() ? save() : this;
+        return autoSave();
       }
       if(value == null) data.remove(paths[0]);
       else data.put(paths[0], value);
-      return options.autoSave() ? save() : this;
+      return autoSave();
     }
     for(int i = 0; i < paths.length; i++) {
       String lastKey = paths[i];
@@ -332,10 +339,24 @@ public class DynamicJsonConfiguration extends DefaultDynamicConfigurationSection
         start = (IDynamicConfigurationSection) start.get(lastKey);
       }
     }
-    return options.autoSave() ? save() : this;
+    return autoSave();
   }
 
-  @Override
+	public IDynamicConfigurationSection autoSave() {
+		if(options.autoSave()) {
+			if(autoSaveTask != null && !autoSaveTask.isDone() && !autoSaveTask.isCancelled())
+				autoSaveTask.cancel(true);
+			autoSaveTask = autoSaveService.schedule(() -> {
+				synchronized(DynamicJsonConfiguration.this) {
+					save();
+				}
+			}, 250, TimeUnit.MILLISECONDS);
+		}
+		return this;
+	}
+
+
+	@Override
   public IDynamicConfigurationSection set(String path, Object value, String comment) {
     if(DynamicConfigurationManager.DEBUG_ENABLED)
      Logger.getLogger("DynamicStudios").log(Level.WARNING,

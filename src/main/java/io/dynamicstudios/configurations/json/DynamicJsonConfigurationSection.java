@@ -76,6 +76,11 @@ public class DynamicJsonConfigurationSection extends DefaultDynamicConfiguration
     return this;
   }
 
+  public IDynamicConfigurationSection autoSave() {
+    configuration.autoSave();
+    return this;
+  }
+
   @Override
   public IDynamicConfigurationSection reload() {
     configuration.reload();
@@ -127,11 +132,11 @@ public class DynamicJsonConfigurationSection extends DefaultDynamicConfiguration
           data.put(path, section);
           serializer.serialize(section, value);
         }
-        return configuration.options().autoSave() ? save() : this;
+        return autoSave();
       }
       if(value == null) data.remove(paths[0]);
       else data.put(paths[0], value);
-      return configuration.options().autoSave() ? save() : this;
+      return autoSave();
     }
     for(int i = 0; i < paths.length; i++) {
       String lastKey = paths[i];
@@ -145,7 +150,7 @@ public class DynamicJsonConfigurationSection extends DefaultDynamicConfiguration
         start = (IDynamicConfigurationSection) start.get(lastKey);
       }
     }
-    return configuration.options().autoSave() ? save() : this;
+    return autoSave();
   }
 
   @Override

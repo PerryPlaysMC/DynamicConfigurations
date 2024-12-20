@@ -12,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -22,6 +23,8 @@ import java.util.stream.Collectors;
  **/
 
 public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSectionImpl implements IDynamicConfiguration {
+	protected ScheduledExecutorService autoSaveService = Executors.newSingleThreadScheduledExecutor();
+	protected ScheduledFuture autoSaveTask = null;
 	protected final HashMap<String, String> COMMENTS = new HashMap<>();
 	protected final HashMap<String, String> INLINE_COMMENTS = new HashMap<>();
 	private final File file;
@@ -238,6 +241,7 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 			yaml.options().indent(options.indent());
 			try {yaml.loadFromString("");} catch (InvalidConfigurationException ignored) {}
 			toBukkit(this, yaml);
+
 			BufferedWriter writer = new BufferedWriter(new FileWriter(file));
 			writer.write(FileUtils.generateNewConfigString(this, options(), COMMENTS, INLINE_COMMENTS));
 			writer.flush();
@@ -381,11 +385,11 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 					data.put(path, section);
 					serializer.serialize(section, value);
 				}
-				return options.autoSave() ? save() : this;
+				return autoSave();
 			}
 			if(value == null) data.remove(paths[0]);
 			else data.put(paths[0], value);
-			return options.autoSave() ? save() : this;
+			return autoSave();
 		}
 		for(int i = 0; i < paths.length; i++) {
 			String lastKey = paths[i];
@@ -400,7 +404,20 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 			}
 		}
 		lastPath = path;
-		return options.autoSave() ? save() : this;
+		return autoSave();
+	}
+
+	public IDynamicConfigurationSection autoSave() {
+		if(options.autoSave()) {
+			if(autoSaveTask != null && !autoSaveTask.isDone() && !autoSaveTask.isCancelled())
+				autoSaveTask.cancel(true);
+			autoSaveTask = autoSaveService.schedule(() -> {
+				synchronized(DynamicYamlConfiguration.this) {
+					save();
+				}
+			}, 250, TimeUnit.MILLISECONDS);
+		}
+		return this;
 	}
 
 	@Override
