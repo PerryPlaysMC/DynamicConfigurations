@@ -6,11 +6,11 @@ package io.dynamicstudios.configurations;
  **/
 public interface IDynamicConfigurationSerializer<T> {
 
-  Class<? extends T> type();
+ Class<? extends T> type();
 
-  void serialize(IDynamicConfigurationSection configuration, T t);
+ void serialize(IDynamicConfigurationSection configuration, T t);
 
-  T deserialize(IDynamicConfigurationSection configuration);
+ T deserialize(IDynamicConfigurationSection configuration);
 
 
 }

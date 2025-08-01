@@ -14,27 +14,29 @@ import java.util.Map;
 
 public interface IDynamicConfiguration extends IDynamicConfigurationSection {
 
-  File file();
+ File file();
 
-  File directory();
+ File directory();
 
-  JavaPlugin plugin();
+ JavaPlugin plugin();
 
-  DynamicConfigurationDirectory configurationDirectory();
+ DynamicConfigurationDirectory configurationDirectory();
 
-  IDynamicConfiguration configurationDirectory(DynamicConfigurationDirectory directory);
+ IDynamicConfiguration configurationDirectory(DynamicConfigurationDirectory directory);
 
-  String name();
+ String name();
 
-  boolean supportsComments();
+ IDynamicConfiguration rename(String name);
 
-  boolean isGhost();
+ boolean supportsComments();
 
-  Map<String, String> comments();
+ boolean isGhost();
 
-  Map<String, String> inlineComments();
+ Map<String, String> comments();
 
-  IDynamicConfiguration regenerate();
+ Map<String, String> inlineComments();
 
-  String saveToString();
+ IDynamicConfiguration regenerate();
+
+ String saveToString();
 }

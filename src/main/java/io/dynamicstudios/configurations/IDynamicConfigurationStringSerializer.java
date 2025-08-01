@@ -6,13 +6,16 @@ package io.dynamicstudios.configurations;
  **/
 public interface IDynamicConfigurationStringSerializer<T> extends IDynamicConfigurationSerializer<T> {
 
-  default void serialize(IDynamicConfigurationSection configuration, T t) {}
+ default void serialize(IDynamicConfigurationSection configuration, T t) {
+ }
 
-  default T deserialize(IDynamicConfigurationSection configuration) {return null;}
+ default T deserialize(IDynamicConfigurationSection configuration) {
+	return null;
+ }
 
-  String serialize(T t);
+ String serialize(T t);
 
-  T deserialize(String configuration);
+ T deserialize(String configuration);
 
 
 }
