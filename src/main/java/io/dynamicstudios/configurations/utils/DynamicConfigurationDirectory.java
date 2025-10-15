@@ -5,8 +5,8 @@ import io.dynamicstudios.configurations.IDynamicConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 /**
@@ -20,6 +20,8 @@ public class DynamicConfigurationDirectory {
  private final List<DynamicConfigurationDirectory> subDirectories;
  private final List<IDynamicConfiguration> configurations;
  private final DynamicConfigurationDirectory parent;
+ private List<Consumer<IDynamicConfiguration>> reloadListeners = new ArrayList<>();
+ private Map<String, Consumer<IDynamicConfiguration>> reloadListener = new HashMap<>();
  private boolean allowsSubDirectories = true;
 
  public DynamicConfigurationDirectory(JavaPlugin plugin, File directory) {
@@ -36,8 +38,38 @@ public class DynamicConfigurationDirectory {
 	DynamicConfigurationManager.addConfigurationDirectory(this);
  }
 
+
+ public DynamicConfigurationDirectory onReload(Consumer<IDynamicConfiguration>... onReload) {
+	reloadListeners = new ArrayList<>(Arrays.asList(onReload));
+	return this;
+ }
+
+ public DynamicConfigurationDirectory addReloadListener(Consumer<IDynamicConfiguration> onReload) {
+	reloadListeners.add(onReload);
+	return this;
+ }
+
+ public DynamicConfigurationDirectory clearReloadListeners() {
+	reloadListeners.clear();
+	reloadListener.clear();
+	return this;
+ }
+
+ public DynamicConfigurationDirectory onReload(String config, Consumer<IDynamicConfiguration> onReload) {
+	reloadListener.put(config, onReload);
+	return this;
+ }
+
  public DynamicConfigurationDirectory reload() {
-	for(IDynamicConfiguration configuration : configurations) configuration.reload();
+	for(IDynamicConfiguration configuration : configurations) {
+	 configuration.reload();
+	 if(reloadListener.containsKey(configuration.name())) reloadListener.get(configuration.name()).accept(configuration);
+	 else if(reloadListener.containsKey(configuration.file().getName())) reloadListener.get(configuration.file().getName()).accept(configuration);
+	 else if(reloadListener.containsKey(configuration.file().getAbsolutePath())) reloadListener.get(configuration.file().getAbsolutePath()).accept(configuration);
+	 for(Consumer<IDynamicConfiguration> listener : reloadListeners) {
+		listener.accept(configuration);
+	 }
+	}
 	configurations.clear();
 	subDirectories.clear();
 	if(!directory.isDirectory()) directory.mkdirs();

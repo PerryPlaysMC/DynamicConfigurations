@@ -19,6 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
  **/
 
 public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSectionImpl implements IDynamicConfiguration {
+
+ protected List<Runnable> reloadListeners = new ArrayList<>();
  protected ScheduledExecutorService autoSaveService = Executors.newSingleThreadScheduledExecutor();
  protected ScheduledFuture autoSaveTask = null;
  protected final HashMap<String, String> COMMENTS = new HashMap<>();
@@ -197,10 +200,10 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
  @Override
  public IDynamicConfiguration rename(String name) {
 	File file = this.file;
-	if (file == null) {
+	if(file == null) {
 	 throw new IllegalStateException("File cannot be null");
 	}
-	if (name == null || name.trim().isEmpty()) {
+	if(name == null || name.trim().isEmpty()) {
 	 throw new IllegalArgumentException("Name cannot be null or empty");
 	}
 
@@ -214,7 +217,7 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 	 Path destination = newFile.toPath();
 	 Files.move(source, destination);
 	 this.file = newFile; // Update the internal file reference
-	} catch (IOException e) {
+	} catch(IOException e) {
 	 throw new RuntimeException("Failed to rename file to " + name, e);
 	}
 
@@ -240,6 +243,24 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
  @Override
  public Map<String, String> inlineComments() {
 	return ImmutableMap.copyOf(INLINE_COMMENTS);
+ }
+
+ @Override
+ public IDynamicConfiguration onReload(Runnable... onReload) {
+	reloadListeners = new ArrayList<>(Arrays.asList(onReload));
+	return this;
+ }
+
+ @Override
+ public IDynamicConfiguration addReloadListener(Runnable onReload) {
+	reloadListeners.add(onReload);
+	return this;
+ }
+
+ @Override
+ public IDynamicConfiguration clearReloadListeners() {
+	reloadListeners.clear();
+	return this;
  }
 
  @Override
@@ -301,6 +322,7 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 	 if(stream != null && stream.get() != null)
 		fromBukkit(FileUtils.findKeys(stream.get()), yaml, this, data);
 	 this.data = data;
+	 reloadListeners.forEach(Runnable::run);
 	 return this;
 	}
 	if(file != null) {
@@ -324,6 +346,8 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 	 };
 	 try {
 		if(!YamlConfigurationUtil.validate(inputStream.get())) {
+		 COMMENTS.clear();
+		 INLINE_COMMENTS.clear();
 		 yaml = YamlConfigurationUtil.fixFromString(inputStream.get(), COMMENTS, INLINE_COMMENTS);
 		} else {
 		 yaml = YamlConfigurationUtil.loadConfiguration(new InputStreamReader(inputStream.get()));
@@ -341,14 +365,16 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 	} catch(Exception e) {
 	 e.printStackTrace();
 	}
+	reloadListeners.forEach(Runnable::run);
 	return this;
  }
 
  private void updateComments() {
+	Map<String, String>[] totalComments = FileUtils.findAllComments(stream.get());
 	COMMENTS.clear();
-	COMMENTS.putAll(FileUtils.findComments(stream.get()));
+	COMMENTS.putAll(totalComments[0]);
 	INLINE_COMMENTS.clear();
-	INLINE_COMMENTS.putAll(FileUtils.findInlineComments(stream.get()));
+	INLINE_COMMENTS.putAll(totalComments[1]);
  }
 
  private void toBukkit(IDynamicConfigurationSection input, ConfigurationSection section) {
@@ -365,18 +391,27 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 
  private void fromBukkit(List<String> arrangedKeys, ConfigurationSection input, IDynamicConfigurationSection section, Map<String, Object> data) {
 	for(int i = 0; i < arrangedKeys.size(); i++) {
-	 String key = arrangedKeys.get(i);
-	 Object value = input.get(key);
-	 if(value instanceof ConfigurationSection) {
-		IDynamicConfigurationSection sec = new DynamicYamlConfigurationSection(this, section, key, new LinkedHashMap<>());
-		List<String> newKeys = arrangedKeys.stream().filter(s -> s.startsWith(key + ".") && !s.equals(key))
-			 .map(s -> s.substring(s.split("\\.")[0].length() + 1)).collect(Collectors.toList());
-		Map<String, Object> newData = new LinkedHashMap<>();
-		this.fromBukkit(newKeys, (ConfigurationSection) value, sec, newData);
-		sec.data().putAll(newData);
-		data.put(key, sec);
-		i += newKeys.size();
-	 } else data.put(key, value instanceof String ? ((String) value).replace("\\n", "\n") : value);
+		String key = arrangedKeys.get(i);
+		String strKey = arrangedKeys.get(i).replaceAll("['\"](.+)[\"']", "$1");
+	 try {
+		Object value = input.get(strKey);
+		if(value instanceof ConfigurationSection) {
+		 IDynamicConfigurationSection sec = new DynamicYamlConfigurationSection(this, section, key, new LinkedHashMap<>());
+		 List<String> newKeys = arrangedKeys.stream().filter(s -> s.startsWith(key + ".") && !s.equals(key))
+				.map(s -> s.substring(s.indexOf(".") + 1)).collect(Collectors.toList());
+		 Map<String, Object> newData = new LinkedHashMap<>();
+		 this.fromBukkit(newKeys, (ConfigurationSection) value, sec, newData);
+		 sec.data().putAll(newData);
+		 data.put(strKey, sec);
+		 i += newKeys.size();
+		} else {
+		 data.put(strKey, value instanceof String ? ((String) value).replace("\\n", "\n") : value);
+		}
+	 } catch(Exception e) {
+
+		Logger.getLogger("DynamicStudios").warning(name() + ": Error while reading from bukkit Key: '" + key + "' Localized: '" + strKey + "'");
+		e.printStackTrace();
+	 }
 	}
  }
 
@@ -393,7 +428,6 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
  @Override
  public List<String> getKeys(boolean deep) {
 	if(!deep) return data.keySet().stream().sorted().collect(Collectors.toList());
-	;
 	return keys(this, new ArrayList<>());
  }
 
@@ -417,6 +451,8 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
  public IDynamicConfigurationSection set(String path, Object value) {
 	String[] paths = path.split("\\.");
 	IDynamicConfigurationSection start = this;
+	if(DynamicConfigurationManager.DEEP_DEBUG_ENABLED)
+	 Logger.getLogger("DynamicStudios").log(Level.INFO, "Config Saving: '" + (value == null ? "null" : value.getClass().getName()) + "' to: " + path + " has serializer: " + (value != null && DynamicConfigurationManager.hasSerializer(value.getClass())) + ", paths: " + paths.length);
 	if(paths.length == 1) {
 	 if(value != null && DynamicConfigurationManager.hasSerializer(value.getClass())) {
 		lastPath = path;
@@ -431,7 +467,7 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 		return autoSave();
 	 }
 	 if(value == null) data.remove(paths[0]);
-	 else data.put(paths[0], value);
+	 else data.put(paths[0], value instanceof Enum<?> ? ((Enum<?>) value).name() : value);
 	 return autoSave();
 	}
 	for(int i = 0; i < paths.length; i++) {
@@ -504,7 +540,8 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 	 for(int i = 0; i < split.length; i++) {
 		String key = split[i];
 		Object value = data.getOrDefault(key, defaultValue);
-		if(value instanceof IDynamicConfigurationSection) data = new LinkedHashMap<>(((IDynamicConfigurationSection) value).data());
+		if(value instanceof IDynamicConfigurationSection)
+		 data = new LinkedHashMap<>(((IDynamicConfigurationSection) value).data());
 		if(i == split.length - 1) return value;
 	 }
 	 return data.getOrDefault(split[0], defaultValue);

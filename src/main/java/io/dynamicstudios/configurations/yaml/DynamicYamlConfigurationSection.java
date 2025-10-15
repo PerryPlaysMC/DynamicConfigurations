@@ -2,8 +2,11 @@ package io.dynamicstudios.configurations.yaml;
 
 import io.dynamicstudios.configurations.*;
 import io.dynamicstudios.configurations.utils.DynamicConfigurationOptions;
+import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -122,6 +125,8 @@ public class DynamicYamlConfigurationSection extends DefaultDynamicConfiguration
  public IDynamicConfigurationSection set(String path, Object value) {
 	String[] paths = path.split("\\.");
 	IDynamicConfigurationSection start = this;
+	if(DynamicConfigurationManager.DEEP_DEBUG_ENABLED)
+	 Logger.getLogger("DynamicStudios").log(Level.INFO, "ConfigSection Saving: '" + (value == null ? "null" : value.getClass().getName()) + "' to: " + path + " has serializer: " + (value != null && DynamicConfigurationManager.hasSerializer(value.getClass())) + ", paths: " + paths.length);
 	if(paths.length == 1) {
 	 if(value != null && DynamicConfigurationManager.hasSerializer(value.getClass())) {
 		lastPath = path;
@@ -136,7 +141,7 @@ public class DynamicYamlConfigurationSection extends DefaultDynamicConfiguration
 		return autoSave();
 	 }
 	 if(value == null) data.remove(paths[0]);
-	 else data.put(paths[0], value);
+	 else data.put(paths[0], value instanceof Enum<?> ? ((Enum<?>) value).name() : value);
 	 return autoSave();
 	}
 	for(int i = 0; i < paths.length; i++) {
@@ -148,6 +153,7 @@ public class DynamicYamlConfigurationSection extends DefaultDynamicConfiguration
 	 } else {
 		if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
 		 start.set(lastKey, new DynamicYamlConfigurationSection(configuration, start == this ? null : start, lastKey, new LinkedHashMap<>()));
+
 		start = (IDynamicConfigurationSection) start.get(lastKey);
 	 }
 	}
@@ -237,4 +243,7 @@ public class DynamicYamlConfigurationSection extends DefaultDynamicConfiguration
  public String toString() {
 	return asString();
  }
+
+ 
+
 }

@@ -177,6 +177,16 @@ public interface IDynamicConfigurationSection {
  <T> T get(Class<T> deserializeType, String path, T defaultValue);
 
  /**
+	* Check if the path is a configuration section
+	*
+	* @param path The path where to check if it is a configuration section
+	* @return The result
+	*/
+ default boolean isSection(String path) {
+	return get(path) instanceof IDynamicConfigurationSection;
+ }
+
+ /**
 	* Get a ConfigurationSection
 	*
 	* @param path The path where the configuration section is located
@@ -218,6 +228,25 @@ public interface IDynamicConfigurationSection {
 	* @return The String from the config, defaultValue if not set
 	*/
  String getString(String path, String defaultValue);
+
+ /**
+	* Get a Enum<?> from the config
+	*
+	* @param path The path where the object is located
+	* @return The Enum<?> from the config, null if not set
+	*/
+ default <T extends Enum<?>> T getEnum(Class<T> tEnum, String path) {
+	return getEnum(tEnum, path, options().defaults() == null ? null : options().defaults().getEnum(tEnum, path));
+ }
+
+ /**
+	* Get a Enum<?> from the config
+	*
+	* @param path         The path where the object is located
+	* @param defaultValue If the path is not set, return defaultValue
+	* @return The Enum<?> from the config, defaultValue if not set
+	*/
+ <T extends Enum<?>> T getEnum(Class<T> tEnum, String path, T defaultValue);
 
  /**
 	* Get a Double from the config
@@ -513,6 +542,25 @@ public interface IDynamicConfigurationSection {
 	* @return The List<Boolean> from the config, defaultValue if not set
 	*/
  List<Boolean> getListBoolean(String path, List<Boolean> defaultValue);
+
+ /**
+	* Get a List<Enum<?>> from the config
+	*
+	* @param path The path where the object is located
+	* @return The List<Enum<?>> from the config, null if not set
+	*/
+ default <T extends Enum<?>> List<T> getListEnum(Class<T> tEnum, String path) {
+	return getListEnum(tEnum, path, options().defaults() == null ? null : options().defaults().getListEnum(tEnum, path));
+ }
+
+ /**
+	* Get a List<Enum<?>> from the config
+	*
+	* @param path         The path where the object is located
+	* @param defaultValue If the path is not set, return defaultValue
+	* @return The List<Enum<?>> from the config, defaultValue if not set
+	*/
+ <T extends Enum<?>> List<T> getListEnum(Class<T> tEnum, String path, List<T> defaultValue);
 
  boolean contains(String path);
 

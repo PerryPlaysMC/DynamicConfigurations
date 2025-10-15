@@ -1,7 +1,9 @@
 package io.dynamicstudios.configurations;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public abstract class DefaultDynamicConfigurationSectionImpl implements IDynamicConfigurationSection {
@@ -107,6 +109,18 @@ public abstract class DefaultDynamicConfigurationSectionImpl implements IDynamic
 	return !(value instanceof Boolean) ? (value != null ? f : defaultValue) : (Boolean) value;
  }
 
+
+ @Override
+ public <T extends Enum<?>> T getEnum(Class<T> tEnum, String path, T defaultValue) {
+	String val = getString(path);
+	for(Enum<?> enumConstant : tEnum.getEnumConstants()) {
+	 if(enumConstant == null) continue;
+	 if(enumConstant.name().equalsIgnoreCase(val)) return (T) enumConstant;
+	}
+	return defaultValue;
+ }
+
+
  @Override
  public String getMessage(String path, String defaultValue) {
 	Object value = get(path);
@@ -183,6 +197,21 @@ public abstract class DefaultDynamicConfigurationSectionImpl implements IDynamic
 	List<String> value = getListString(path, null);
 	try {
 	 return value.stream().map(Boolean::valueOf).collect(Collectors.toList());
+	} catch(Exception e) {
+	 return defaultValue;
+	}
+ }
+
+
+ @Override
+ public <T extends Enum<?>> List<T> getListEnum(Class<T> tEnum, String path, List<T> defaultValue) {
+	List<String> value = getListString(path, null);
+	try {
+	 Map<String, T> enums = new HashMap<>();
+	 for(T enumConstant : tEnum.getEnumConstants()) {
+		enums.put(enumConstant.name().toLowerCase(), enumConstant);
+	 }
+	 return value.stream().map(c->enums.getOrDefault(c.toLowerCase(),null)).collect(Collectors.toList());
 	} catch(Exception e) {
 	 return defaultValue;
 	}

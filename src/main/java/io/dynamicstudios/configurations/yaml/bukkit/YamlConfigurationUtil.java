@@ -224,55 +224,76 @@ public class YamlConfigurationUtil extends FileConfiguration {
  public static YamlConfigurationUtil fixFromString(String contents, Map<String, String> COMMENTS, Map<String, String> INLINE_COMMENTS) {
 	try {
 	 YamlConfigurationUtil config = loadConfiguration(contents);
-	 COMMENTS.putAll(FileUtils.findComments(contents));
-	 INLINE_COMMENTS.putAll(FileUtils.findInlineComments(contents));
+	 Map<String, String>[] allComments = FileUtils.findAllComments(contents);
+	 COMMENTS.putAll(allComments[0]);
+	 INLINE_COMMENTS.putAll(allComments[1]);
 	 return config;
 	} catch(InvalidConfigurationException e) {
-	 Pattern pat = Pattern.compile("(.*)\\s*line\\s*(\\d+).*column\\s*(\\d+):(\\n[^\\n]+\\n[^\\n]+\\n)(.*)\\s*line\\s*(\\d+).*column\\s*(\\d+)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-	 Pattern cmt = Pattern.compile("(\\s*(?:(?<a>['\\\"]).*(?:\\k<a>))|[^#]+)?(\\s*#.+)?", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-	 Matcher matcher = pat.matcher(e.getMessage());
-	 String[] lines = contents.split("\n");
-	 boolean find = matcher.find();
-	 if(!find) return null;
-	 while(find) {
-		String expected = matcher.group(5);
-		int line = Integer.parseInt(matcher.group(6)) - 1;
-		int col = Integer.parseInt(matcher.group(7));
-		if(expected.startsWith("expected")) {
-		 String ln = lines[line];
-		 Matcher m = cmt.matcher(ln);
-		 String comment = ln.contains("#") ? ln.substring(ln.indexOf('#') - 1) : "";
-		 String text = ln.contains("#") ? ln.split("#")[0] : ln;
-		 if(m.find()) {
-			text = m.group(1);
-			comment = m.group(3) == null ? "" : m.group(3);
-		 }
-		 if(expected.contains("block end"))
-			text = "#" + lines[line];
-		 else if(expected.startsWith("expected") && (expected.contains("node") || expected.contains("content"))) {
-			if(text.endsWith(",")) text = text.substring(0, text.length() - 1);
-			if(!text.endsWith("]")) text += "]";
-			text = text.substring(0, col - 1) + text.substring(col);
-		 } else if(expected.startsWith("expected") && (expected.contains("']'") || expected.contains("','"))) {
-			if(text.endsWith(",")) text = text.substring(0, text.length() - 1);
-			if(!text.endsWith("]")) text += "]";
-		 } else {
-			Logger.getLogger("DynamicStudios").log(Level.SEVERE, "EXPECTED: '" + expected + "'", e);
-			try {
-			 return loadConfiguration(contents);
-			} catch(InvalidConfigurationException ex) {
-			 throw new RuntimeException(ex);
-			}
-		 }
-		 lines[line] = text + comment;
-		}
-		find = matcher.find();
-	 }
-	 contents = String.join("\n", lines);
-	 COMMENTS.putAll(FileUtils.findComments(contents));
-	 INLINE_COMMENTS.putAll(FileUtils.findInlineComments(contents));
+	 contents = stripErrors(contents, e);
+	 Map<String, String>[] allComments = FileUtils.findAllComments(contents);
+	 COMMENTS.putAll(allComments[0]);
+	 INLINE_COMMENTS.putAll(allComments[1]);
 	 return fixFromString(contents, COMMENTS, INLINE_COMMENTS);
 	}
+ }
+
+ private static String stripErrors(String contents, InvalidConfigurationException e) {
+	Pattern pat = Pattern.compile("(.*)\\s*line\\s*(\\d+).*column\\s*(\\d+):(\\n[^\\n]+\\n[^\\n]+\\n)(.*)\\s*line\\s*(\\d+).*column\\s*(\\d+)", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+	Pattern cmt = Pattern.compile("(\\s*(?:(?<a>['\\\"]).*(?:\\k<a>))|[^#]+)?(\\s*#.+)?", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+	Matcher matcher = pat.matcher(e.getMessage());
+	List<String> lines = new ArrayList<>(Arrays.asList(contents.split("\n", -1)));
+	boolean find = matcher.find();
+	if(!find) return "{}";
+	List<Integer> remove = new ArrayList<>();
+	while(find) {
+	 String expected = matcher.group(5).toLowerCase().trim();
+	 int line = Integer.parseInt(matcher.group(6)) - 1;
+	 int startLine = Integer.parseInt(matcher.group(2)) - 1;
+	 int col = Integer.parseInt(matcher.group(7));
+	 int startCol = Integer.parseInt(matcher.group(3));
+	 if(expected.startsWith("expected")) {
+		String ln = lines.get(line);
+		Matcher m = cmt.matcher(ln);
+		String comment = ln.contains("#") ? ln.substring(ln.indexOf('#') - 1) : "";
+		String text = ln.contains("#") ? ln.split("#")[0] : ln;
+		if(m.find()) {
+		 text = m.group(1);
+		 comment = m.group(3) == null ? "" : m.group(3);
+		}
+		if(expected.contains("block end"))
+		 text = "#" + lines.get(line);
+		else if(expected.startsWith("expected") && (expected.contains("node") || expected.contains("content"))) {
+		 if(text.endsWith(",")) text = text.substring(0, text.length() - 1);
+		 if(!text.endsWith("]")) text += "]";
+		 text = text.substring(0, col - 1) + text.substring(col);
+		} else if(expected.startsWith("expected") && (expected.contains("']'") || expected.contains("','"))) {
+		 if(text.endsWith(",")) text = text.substring(0, text.length() - 1);
+		 if(!text.endsWith("]")) text += "]";
+		} else {
+		 Logger.getLogger("DynamicStudios").log(Level.SEVERE, "EXPECTED: '" + expected + "'", e);
+		}
+		lines.set(line, text + comment);
+	 } else if(expected.contains("could not find expected ':'")) {
+		if(startCol == 1) {
+		 if(lines.get(startLine - 1).trim().endsWith(":")) {
+			boolean addSpace = !lines.get(startLine - 1).endsWith(" ") && !lines.get(startLine).startsWith(" ");
+			boolean removeSpace = lines.get(startLine - 1).endsWith(" ") && lines.get(startLine).startsWith(" ");
+			String newLine = lines.get(startLine - 1) + (addSpace && !removeSpace ? " " : "") + lines.get(startLine).replace("\n", "").substring(removeSpace ? 1 : 0);
+			lines.set(startLine - 1, newLine);
+			remove.add(startLine);
+		 } else {
+			lines.set(startLine, "#" + lines.get(startLine));
+		 }
+		}
+	 }
+	 find = matcher.find();
+	}
+	StringBuilder content = new StringBuilder();
+	for(int i = 0; i < lines.size(); i++) {
+	 if(remove.contains(i)) continue;
+	 content.append(lines.get(i)).append("\n");
+	}
+	return content.toString();
  }
 
  @Override
@@ -288,7 +309,11 @@ public class YamlConfigurationUtil extends FileConfiguration {
 	 YamlArrayPreserver.apply(rep);
 	 input = (Map<?, ?>) yaml.load(contents);
 	} catch(YAMLException e) {
-	 throw new InvalidConfigurationException(e);
+	 String fixed = stripErrors(contents, new InvalidConfigurationException(e));
+	 if(!fixed.equalsIgnoreCase(contents)) {
+		loadFromString(fixed);
+		return;
+	 } else throw new InvalidConfigurationException(e);
 	} catch(ClassCastException e) {
 	 throw new InvalidConfigurationException("Top level is not a Map.");
 	} catch(Exception e) {

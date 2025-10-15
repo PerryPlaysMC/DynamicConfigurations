@@ -28,6 +28,12 @@ public interface IDynamicConfiguration extends IDynamicConfigurationSection {
 
  IDynamicConfiguration rename(String name);
 
+ IDynamicConfiguration onReload(Runnable... onReload);
+
+ IDynamicConfiguration addReloadListener(Runnable onReload);
+
+ IDynamicConfiguration clearReloadListeners();
+
  boolean supportsComments();
 
  boolean isGhost();
@@ -39,4 +45,33 @@ public interface IDynamicConfiguration extends IDynamicConfigurationSection {
  IDynamicConfiguration regenerate();
 
  String saveToString();
+
+
+ public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, String name) {
+	return DynamicConfigurationManager.createConfiguration(plugin, name);
+ }
+ public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, File directory, String name) {
+	return DynamicConfigurationManager.createConfiguration(plugin, directory, name);
+ }
+ public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, File directory, String resourceName, String name) {
+	return DynamicConfigurationManager.createConfiguration(plugin, directory, resourceName, name);
+ }
+ public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, String directory, String name) {
+	return DynamicConfigurationManager.createConfiguration(plugin, directory, name);
+ }
+ public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, String directory, String resourceName, String name) {
+	return DynamicConfigurationManager.createConfiguration(plugin, directory, resourceName, name);
+ }
+ public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String name) {
+	return DynamicConfigurationManager.createConfiguration(plugin, directory, name);
+ }
+ public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, DynamicConfigurationDirectory directory, String resourceName, String name) {
+	return DynamicConfigurationManager.createConfiguration(plugin, directory, resourceName, name);
+ }
+ public static IDynamicConfiguration createGhostConfiguration(JavaPlugin plugin, String fileName, String configName) {
+	return DynamicConfigurationManager.createGhostConfiguration(plugin, fileName, configName);
+ }
+ public static IDynamicConfiguration createGhostConfiguration(JavaPlugin plugin, String resourceName, String fileName, String configName) {
+	return DynamicConfigurationManager.createGhostConfiguration(plugin, resourceName, fileName, configName);
+ }
 }

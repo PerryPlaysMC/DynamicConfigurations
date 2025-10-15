@@ -135,7 +135,7 @@ public class DynamicJsonConfigurationSection extends DefaultDynamicConfiguration
 		return autoSave();
 	 }
 	 if(value == null) data.remove(paths[0]);
-	 else data.put(paths[0], value);
+	 else data.put(paths[0], value instanceof Enum<?> ? ((Enum<?>) value).name() : value);
 	 return autoSave();
 	}
 	for(int i = 0; i < paths.length; i++) {

@@ -21,10 +21,11 @@ import java.util.logging.Logger;
 public class DynamicConfigurationManager {
 
  private static final HashMap<Class<?>, IDynamicConfigurationSerializer<?>> CONFIGURATION_SERIALIZER = new HashMap<>();
- private static final Set<IDynamicConfiguration> CONFIGURATIONS = new HashSet<>();
+ private static final Map<String, IDynamicConfiguration> CONFIGURATIONS = new HashMap<>();
  private static final Set<DynamicConfigurationDirectory> CONFIGURATION_DIRECTORIES = new HashSet<>();
  private static final Map<String, ConfigCreate> CONFIG_EXTENSION_REGISTER = new HashMap<>();
  public static boolean DEBUG_ENABLED = false;
+ public static boolean DEEP_DEBUG_ENABLED = false;
 
  static {
 	registerExtension(".yml", (plugin, directory, resourceName, name) -> {
@@ -44,6 +45,22 @@ public class DynamicConfigurationManager {
 		return new DynamicJsonConfiguration(plugin, (InputStreamSupplier) directory, name);
 	 return new DynamicJsonConfiguration(plugin, "", resourceName, name);
 	});
+	registerSerializer(new IDynamicConfigurationStringSerializer<Enum>() {
+	 @Override
+	 public String serialize(Enum anEnum) {
+		return "";
+	 }
+
+	 @Override
+	 public Enum deserialize(String configuration) {
+		return null;
+	 }
+
+	 @Override
+	 public Class<? extends Enum> type() {
+		return Enum.class;
+	 }
+	});
  }
 
  public static String getStackTrace() {
@@ -52,11 +69,11 @@ public class DynamicConfigurationManager {
  }
 
  public static boolean hasSerializer(Class<?> deserializeType) {
-	return CONFIGURATION_SERIALIZER.containsKey(deserializeType);
+	return CONFIGURATION_SERIALIZER.containsKey(deserializeType) || CONFIGURATION_SERIALIZER.containsKey(deserializeType.getSuperclass());
  }
 
  public static <T> IDynamicConfigurationSerializer<T> serializer(Class<?> deserializeType) {
-	return (IDynamicConfigurationSerializer<T>) CONFIGURATION_SERIALIZER.get(deserializeType);
+	return (IDynamicConfigurationSerializer<T>) CONFIGURATION_SERIALIZER.getOrDefault(deserializeType, CONFIGURATION_SERIALIZER.get(deserializeType.getSuperclass()));
  }
 
  public static void registerExtension(String extension, ConfigCreate clazz) {
@@ -67,11 +84,13 @@ public class DynamicConfigurationManager {
  }
 
  public static void registerSerializer(IDynamicConfigurationSerializer<?> serializer) {
+	if(DEBUG_ENABLED)
+	 Logger.getLogger("DynamicStudios").log(Level.INFO, "Registered serializer for: '" + serializer.type().getName() + "'");
 	CONFIGURATION_SERIALIZER.put(serializer.type(), serializer);
  }
 
  public static void addConfiguration(IDynamicConfiguration configuration) {
-	CONFIGURATIONS.add(configuration);
+	CONFIGURATIONS.put((configuration.directory() != null ? configuration.directory().getPath().replaceFirst(configuration.plugin().getDataFolder().getPath(), "") + "/" : "") + configuration.name(), configuration);
  }
 
  public static void removeConfiguration(IDynamicConfiguration configuration) {
@@ -79,12 +98,7 @@ public class DynamicConfigurationManager {
  }
 
  public static IDynamicConfiguration getConfiguration(String name) {
-	for(IDynamicConfiguration configuration : getConfigurations())
-	 if(configuration.name().equals(name) || configuration.file().getName().equals(name)
-			|| (configuration.directory().getName() + "/" + configuration.name()).equals(name)
-			|| (configuration.directory().getName() + "/" + configuration.file().getName()).equals(name))
-		return configuration;
-	return null;
+	return getConfigurations().get(name);
  }
 
  public static void addConfigurationDirectory(DynamicConfigurationDirectory configuration) {
@@ -117,8 +131,7 @@ public class DynamicConfigurationManager {
 
 
  public static IDynamicConfiguration createConfiguration(JavaPlugin plugin, File directory, String resourceName, String name) {
-	IDynamicConfiguration config = getConfiguration(name);
-	if(config == null) config = getConfiguration((directory != null ? directory.getPath() + "/" : "") + name);
+	IDynamicConfiguration config = getConfiguration((directory != null ? directory.getPath().replaceFirst(plugin.getDataFolder().getPath(), "") + "/" : "") + name);
 	if(config == null) {
 	 if(name.lastIndexOf('.') != -1) {
 		String extension = name.substring(name.lastIndexOf('.'));
@@ -194,7 +207,20 @@ public class DynamicConfigurationManager {
 		Logger.getLogger("DynamicStudios").log(Level.INFO, "Found missing keys" + list1 + " in file '" + configuration.file() + "'");
 	 boolean autoSave = configuration.options().autoSave();
 	 configuration.options().autoSave(false);
-	 for(String s : list1) {
+		Set<String> ignoredKeys = configuration.options().ignoredMissingKeys();
+	 A:for(String s : list1) {
+		if(!ignoredKeys.isEmpty()) {
+		 if(ignoredKeys.contains(s)) continue;
+		 if(ignoredKeys.contains("*")) continue;
+		 String[] keys = s.split("\\.");
+		 StringBuilder build = new StringBuilder();
+		 for(String key : keys) {
+			if(build.length() > 0) build.append(".");
+			build.append(key);
+			if(ignoredKeys.contains(build + ".*"))
+			 continue A;
+		 }
+		}
 		if(!configuration.supportsComments()) {
 		 configuration.set(s, ghostConfiguration.get(s));
 		 continue;
@@ -218,8 +244,8 @@ public class DynamicConfigurationManager {
 	return CONFIGURATION_DIRECTORIES;
  }
 
- public static Set<IDynamicConfiguration> getConfigurations() {
-	return new HashSet<>(CONFIGURATIONS);
+ public static Map<String, IDynamicConfiguration> getConfigurations() {
+	return new HashMap<>(CONFIGURATIONS);
  }
 
  public static boolean hasRegister(String extension) {

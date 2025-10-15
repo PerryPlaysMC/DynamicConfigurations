@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
  **/
 
 public class DynamicJsonConfiguration extends DefaultDynamicConfigurationSectionImpl implements IDynamicConfiguration {
+
+ protected List<Runnable> reloadListeners = new ArrayList<>();
  protected ScheduledExecutorService autoSaveService = Executors.newSingleThreadScheduledExecutor();
  protected ScheduledFuture autoSaveTask = null;
 
@@ -244,6 +246,25 @@ public class DynamicJsonConfiguration extends DefaultDynamicConfigurationSection
 	return EMPTY_COMMENTS;
  }
 
+
+ @Override
+ public IDynamicConfiguration onReload(Runnable... onReload) {
+	reloadListeners = new ArrayList<>(Arrays.asList(onReload));
+	return this;
+ }
+
+ @Override
+ public IDynamicConfiguration addReloadListener(Runnable onReload) {
+	reloadListeners.add(onReload);
+	return this;
+ }
+
+ @Override
+ public IDynamicConfiguration clearReloadListeners() {
+	reloadListeners.clear();
+	return this;
+ }
+
  @Override
  public IDynamicConfiguration regenerate() {
 	if(isGhost) return reload();
@@ -305,6 +326,7 @@ public class DynamicJsonConfiguration extends DefaultDynamicConfigurationSection
 	 e.printStackTrace();
 	}
 	if(data == null) data = new LinkedHashMap<>();
+	reloadListeners.forEach(Runnable::run);
 	return this;
  }
 
@@ -356,7 +378,7 @@ public class DynamicJsonConfiguration extends DefaultDynamicConfigurationSection
 		return autoSave();
 	 }
 	 if(value == null) data.remove(paths[0]);
-	 else data.put(paths[0], value);
+	 else data.put(paths[0], value instanceof Enum<?> ? ((Enum<?>) value).name() : value);
 	 return autoSave();
 	}
 	for(int i = 0; i < paths.length; i++) {

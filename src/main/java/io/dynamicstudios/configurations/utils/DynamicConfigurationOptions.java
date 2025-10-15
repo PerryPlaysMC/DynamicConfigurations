@@ -3,6 +3,9 @@ package io.dynamicstudios.configurations.utils;
 import io.dynamicstudios.configurations.DynamicConfigurationManager;
 import io.dynamicstudios.configurations.IDynamicConfiguration;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -20,6 +23,7 @@ public class DynamicConfigurationOptions<T extends IDynamicConfiguration> {
  private boolean loadDefaults = false;
  private boolean hasLoaded = false;
  private StringWrap stringWrap = StringWrap.DOUBLE_QUOTED;
+ private Set<String> ignoredMissingKeys = new HashSet<>();
 
  public DynamicConfigurationOptions(T parentConfiguration) {
 	this.parentConfiguration = parentConfiguration;
@@ -108,6 +112,14 @@ public class DynamicConfigurationOptions<T extends IDynamicConfiguration> {
 	return this;
  }
 
+ public DynamicConfigurationOptions<T> ignoreMissingKeys(String... keys) {
+	this.ignoredMissingKeys = new HashSet<>(Arrays.asList(keys));
+	return this;
+ }
+
+ public Set<String> ignoredMissingKeys() {
+	return ignoredMissingKeys;
+ }
 
  public T configuration() {
 	return parentConfiguration;
