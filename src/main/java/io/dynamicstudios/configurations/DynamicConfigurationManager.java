@@ -48,11 +48,18 @@ public class DynamicConfigurationManager {
 	registerSerializer(new IDynamicConfigurationStringSerializer<Enum>() {
 	 @Override
 	 public String serialize(Enum anEnum) {
-		return "";
+		if(anEnum == null)return null;
+		return anEnum.name();
 	 }
 
 	 @Override
 	 public Enum deserialize(String configuration) {
+		for(Enum enumConstant : type().getEnumConstants()) {
+		 if(enumConstant.name().equals(configuration))return enumConstant;
+		}
+		for(Enum enumConstant : type().getEnumConstants()) {
+		 if(enumConstant.name().equalsIgnoreCase(configuration))return enumConstant;
+		}
 		return null;
 	 }
 
