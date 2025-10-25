@@ -251,7 +251,7 @@ public class YamlConfigurationUtil extends FileConfiguration {
 	 int startLine = Integer.parseInt(matcher.group(2)) - 1;
 	 int col = Integer.parseInt(matcher.group(7));
 	 int startCol = Integer.parseInt(matcher.group(3));
-	 if(expected.startsWith("expected")) {
+	 if(expected.startsWith("expected") || expected.startsWith("found unexpected")) {
 		String ln = lines.get(line);
 		Matcher m = cmt.matcher(ln);
 		String comment = ln.contains("#") ? ln.substring(ln.indexOf('#') - 1) : "";
@@ -260,16 +260,25 @@ public class YamlConfigurationUtil extends FileConfiguration {
 		 text = m.group(1);
 		 comment = m.group(3) == null ? "" : m.group(3);
 		}
-		if(expected.contains("block end"))
-		 text = "#" + lines.get(line);
+		if(expected.contains("block end")) {
+		 text = "#" + lines.get(line) + "# Automatically detected error, didn't know what to do, so I commented it out for you!";
+		}
+		else if(expected.contains("end of stream") && expected.contains("string")) {
+		 remove.add(startLine);
+		 char c = lines.get(startLine).charAt(startCol - 1);
+		 text = lines.get(startLine) + c + " # Automatically added '" + c + "'";
+		}
 		else if(expected.startsWith("expected") && (expected.contains("node") || expected.contains("content"))) {
 		 if(text.endsWith(",")) text = text.substring(0, text.length() - 1);
 		 if(!text.endsWith("]")) text += "]";
 		 text = text.substring(0, col - 1) + text.substring(col);
 		} else if(expected.startsWith("expected") && (expected.contains("']'") || expected.contains("','"))) {
 		 if(text.endsWith(",")) text = text.substring(0, text.length() - 1);
-		 if(!text.endsWith("]")) text += "]";
-		} else {
+		 if(!text.endsWith("]")) {
+			text += "]";
+			text += "# Automatically added ']'";
+		 }
+		}else {
 		 Logger.getLogger("DynamicStudios").log(Level.SEVERE, "EXPECTED: '" + expected + "'", e);
 		}
 		lines.set(line, text + comment);
@@ -313,7 +322,8 @@ public class YamlConfigurationUtil extends FileConfiguration {
 	 if(!fixed.equalsIgnoreCase(contents)) {
 		loadFromString(fixed);
 		return;
-	 } else throw new InvalidConfigurationException(e);
+	 } else
+		throw new InvalidConfigurationException(e);
 	} catch(ClassCastException e) {
 	 throw new InvalidConfigurationException("Top level is not a Map.");
 	} catch(Exception e) {
