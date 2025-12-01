@@ -5,7 +5,6 @@ import io.dynamicstudios.configurations.utils.DynamicConfigurationOptions;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -125,8 +124,6 @@ public class DynamicYamlConfigurationSection extends DefaultDynamicConfiguration
  public IDynamicConfigurationSection set(String path, Object value) {
 	String[] paths = path.split("\\.");
 	IDynamicConfigurationSection start = this;
-	if(DynamicConfigurationManager.DEEP_DEBUG_ENABLED)
-	 Logger.getLogger("DynamicStudios").log(Level.INFO, "ConfigSection Saving: '" + (value == null ? "null" : value.getClass().getName()) + "' to: " + path + " has serializer: " + (value != null && DynamicConfigurationManager.hasSerializer(value.getClass())) + ", paths: " + paths.length);
 	if(paths.length == 1) {
 	 if(value != null && DynamicConfigurationManager.hasSerializer(value.getClass())) {
 		lastPath = path;
@@ -153,7 +150,6 @@ public class DynamicYamlConfigurationSection extends DefaultDynamicConfiguration
 	 } else {
 		if(!start.isSet(lastKey) || !(start.get(lastKey) instanceof IDynamicConfigurationSection))
 		 start.set(lastKey, new DynamicYamlConfigurationSection(configuration, start == this ? null : start, lastKey, new LinkedHashMap<>()));
-
 		start = (IDynamicConfigurationSection) start.get(lastKey);
 	 }
 	}
@@ -194,12 +190,16 @@ public class DynamicYamlConfigurationSection extends DefaultDynamicConfiguration
 	Map<String, Object> data = new LinkedHashMap<>(this.data);
 	if(path.contains(".")) {
 	 String[] split = path.split("\\.");
+	 IDynamicConfigurationSection sec = this;
 	 for(int i = 0; i < split.length; i++) {
 		String key = split[i];
-		if(!data.containsKey(key)) return i == split.length - 1 ? data : defaultValue;
+//		if(!data.containsKey(key)) return i == split.length - 1 ? sec : defaultValue;
 		Object value = data.getOrDefault(key, defaultValue);
-		if(value instanceof IDynamicConfigurationSection) data = new LinkedHashMap<>(((IDynamicConfigurationSection) value).data());
-		if(i == split.length - 1) return value;
+		if(value instanceof IDynamicConfigurationSection) {
+		 data = ((IDynamicConfigurationSection) value).data();
+		 sec = (IDynamicConfigurationSection) value;
+		}
+		if(i == split.length - 1 || value == null) return value;
 	 }
 	 return data.getOrDefault(split[0], defaultValue);
 	}

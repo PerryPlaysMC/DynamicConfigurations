@@ -19,7 +19,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -346,8 +345,6 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 	 };
 	 try {
 		if(!YamlConfigurationUtil.validate(inputStream.get())) {
-		 COMMENTS.clear();
-		 INLINE_COMMENTS.clear();
 		 yaml = YamlConfigurationUtil.fixFromString(inputStream.get(), COMMENTS, INLINE_COMMENTS);
 		} else {
 		 yaml = YamlConfigurationUtil.loadConfiguration(new InputStreamReader(inputStream.get()));
@@ -451,8 +448,6 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
  public IDynamicConfigurationSection set(String path, Object value) {
 	String[] paths = path.split("\\.");
 	IDynamicConfigurationSection start = this;
-	if(DynamicConfigurationManager.DEEP_DEBUG_ENABLED)
-	 Logger.getLogger("DynamicStudios").log(Level.INFO, "Config Saving: '" + (value == null ? "null" : value.getClass().getName()) + "' to: " + path + " has serializer: " + (value != null && DynamicConfigurationManager.hasSerializer(value.getClass())) + ", paths: " + paths.length);
 	if(paths.length == 1) {
 	 if(value != null && DynamicConfigurationManager.hasSerializer(value.getClass())) {
 		lastPath = path;
@@ -537,12 +532,16 @@ public class DynamicYamlConfiguration extends DefaultDynamicConfigurationSection
 	Map<String, Object> data = new LinkedHashMap<>(this.data);
 	if(path.contains(".")) {
 	 String[] split = path.split("\\.");
+	 IDynamicConfigurationSection sec = this;
 	 for(int i = 0; i < split.length; i++) {
 		String key = split[i];
+//		if(!data.containsKey(key)) return i == split.length - 1 ? sec : defaultValue;
 		Object value = data.getOrDefault(key, defaultValue);
-		if(value instanceof IDynamicConfigurationSection)
-		 data = new LinkedHashMap<>(((IDynamicConfigurationSection) value).data());
-		if(i == split.length - 1) return value;
+		if(value instanceof IDynamicConfigurationSection) {
+		 data = ((IDynamicConfigurationSection) value).data();
+		 sec = (IDynamicConfigurationSection) value;
+		}
+		if(i == split.length - 1 || value == null) return value;
 	 }
 	 return data.getOrDefault(split[0], defaultValue);
 	}

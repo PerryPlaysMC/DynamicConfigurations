@@ -3,6 +3,7 @@ package io.dynamicstudios.configurations;
 /**
  * Creator: PerryPlaysMC
  * Created: 05/2022
+ * @param <T>   The class to serialize/deserialize (i.e. MyClass)
  **/
 public interface IDynamicConfigurationStringSerializer<T> extends IDynamicConfigurationSerializer<T> {
 

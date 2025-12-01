@@ -19,14 +19,14 @@ import java.util.regex.Pattern;
 public class FileUtils {
  private static final HashMap<String, String> INPUTSTREAM_CACHE = new HashMap<>();
  // private static final Pattern FULL_CONFIG_PARSER = Pattern.compile("^(?<topComment>(?:(?:\\s*)(?:#[^\\n]+))+\\n)?^(?<indent>\\s*)(?<path>(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)\\\"))|(?:(?=')(?:'(?:(?:(?='')..|(?!').)+)'))|(?:(?:(?<!['\\\"])[^:\\n])+)):(?:[\\t ]+(?:(?<=[^#])(?<value>(?:(?:(?=\\\")(?:\\\"(?:.(?:(?=\\\\\\\")..|(?!\\\").)+)?\\\"))|(?:(?=')(?:'(?:(?:(?=''|\\\\')..|(?=''\\n)..\\n|(?=\\n)\\n|(?!').)+)?'))|(?:(?=\\[)\\[(?:(?:(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)\\\"))|(?:(?=')(?:'(?:(?:(?=''|\\\\')..|(?!').)+)'))|[^],]+),?)+\\])|(?=[^#'\\\"])[^\\n#]+)))|(?:(?<list>(?:(?:\\n?(?:^\\s*-(?:((?=\\\")(?:\\\"(?:.(?:(?=\\\\\\\")..|(?!\\\").)+)?\\\"))|((?=')(?:'(?:(?:(?='')..|(?!').)+)'))|(?:(?=\\[)\\[(?:(?:(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)?\\\"))|(?:(?=')(?:'(?:(?:(?='')..|(?!').)+)'))|[^],]+),?)+\\])|[^\\n]+)$))+))))?(?<inlineComment>([\\t ]+)?(?:#[^\\n]*))?[\\t ]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
- private static final Pattern FULL_CONFIG_PARSER = Pattern.compile("(?<emptyLine>(?:^\\s*$\\n)+)|^(?<topComment>(?:(?:\\s*)(?:#[^\\n]+))+\\n)?(?<indent>(?:(?!\\n)\\s)*)(?!#)(?<path>(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)\\\"))|(?:(?=')(?:'(?:(?:(?='')..|(?!').)+)'))|(?:(?:(?<!['\\\"])[^:\\n])+)):(?:[\\t ]+(?:(?<=[^#])(?<value>(?:(?:(?=\\\")(?:\\\"(?:.(?:(?=\\\\\\\")..|(?!\\\").)+)?\\\"))|(?:(?=')(?:'(?:(?:(?=''|\\\\')..|(?=''\\n)..\\n|(?=\\n)\\n|(?!').)+)?'))|(?:(?=\\[)\\[(?:(?:(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)\\\"))|(?:(?=')(?:'(?:(?:(?=''|\\\\')..|(?!').)+)'))|[^],]+),?)+\\])|(?=[^#'\\\"])[^\\n#]+)))|(?:(?<list>(?:(?:\\n?(?:^\\s*-(?:((?=\\\")(?:\\\"(?:.(?:(?=\\\\\\\")..|(?!\\\").)+)?\\\"))|((?=')(?:'(?:(?:(?='')..|(?!').)+)'))|(?:(?=\\[)\\[(?:(?:(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)?\\\"))|(?:(?=')(?:'(?:(?:(?='')..|(?!').)+)'))|[^],]+),?)+\\])|[^\\n]+)$))+))))?(?<inlineComment>([\\t ]+)?(?:#[^\\n]*))?[\\t ]*|(?<comment>(?:^\\s*#\\s*[^\\n]+\\n?)+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+ private static final Pattern FULL_CONFIG_PARSER = Pattern.compile("(?<emptyLine>(?:^\\s*$\\n)+)|^(?<topComment>(?:(?:\\s*)(?:#[^\\n]+))+\\n)?(?<indent>(?:(?!\\n)\\s)*)(?!#)(?<path>(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)\\\"))|(?:(?=')(?:'(?:(?:(?='')..|(?!').)+)'))|(?:(?:(?<!['\\\"])[^:\\n])+)):[\\t ]*(?:(?:(?<=[^#])(?<value>(?:(?:(?=\\\")(?:\\\"(?:.(?:(?=\\\\\\\")..|(?!\\\").)+)?\\\"))|(?:(?=')(?:'(?:(?:(?=''|\\\\')..|(?=''\\n)..\\n|(?=\\n)\\n|(?!').)+)?'))|(?:(?=\\[)\\[(?:(?:(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)\\\"))|(?:(?=')(?:'(?:(?:(?=''|\\\\')..|(?!').)+)'))|[^],]+),?)+\\])|(?=[^#'\\\"])[^\\n#]+)))|(?:[ \\t]*\\n?(?<list>(?:(?=\\[)\\[(?:(?:(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)?\\\"))|(?:(?=')(?:'(?:(?:(?='')..|(?!').)+)'))|[^],]+),?)+\\])|(?:(?:\\n?(?:^\\s*-(?:((?=\\\")(?:\\\"(?:.(?:(?=\\\\\\\")..|(?!\\\").)+)?\\\"))|((?=')(?:'(?:(?:(?='')..|(?!').)+)'))|[^\\n]+)$))+))))?(?<inlineComment>([\\t ]+)?(?:#[^\\n]*))?[\\t ]*|(?<comment>(?:^\\s*#\\s*[^\\n]+\\n?)+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
  private static final Pattern LINE_VALUE_INLINE_COMMENT_DETECTOR = Pattern.compile("^((?<indent>[\\t ]*)(?:(?<path>(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\\\\\").)+)\\\")|(?:'(?:(?:(?='')..|(?!').)+)')|[^:\\n]+):))(?:(?<=[^#])(?<value>(?:(?:(?=\\\")(?:\\\"(?:.(?:(?=\\\\\\\")..|(?!\\\").)+)\\\"))|(?:(?=')(?:'(?:(?:(?='')..|(?!').)+)'))|(?:(?=\\[)\\[(?:(?:(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)\\\"))|(?:(?=')(?:'(?:(?:(?='')..|(?!').)+)'))|[^],]+),?)+\\])|(?=[^#'\\\"])[^\\n#]+)))?(?<comment>([\\t ]+)?(?:#[^\\n]*))?\\s*$", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
 
  /**
 	* @group 1 = Spacing
 	* @group 2 = Value
 	*/
- private static final Pattern LIST_LINE_COMMENT_DETECTOR = Pattern.compile("^(\\s*)-\\s*(?:(?<=[^#])(?<value>(?:(?:(?=\\\")(?:\\\"(?:.(?:(?=\\\\\\\")..|(?!\\\").)+)\\\"))|(?:(?=')(?:'(?:(?:(?=''|\\\\')..|(?=''\\n)..\\n|(?=\\n)\\n|(?!').)+)'))|(?:(?=\\[)\\[(?:(?:(?:(?=\\\")(?:\\\"(?:(?:(?=\\\\\\\")..|(?!\\\").)+)\\\"))|(?:(?=')(?:'(?:(?:(?=''|\\\\')..|(?!').)+)'))|[^],]+),?)+\\])|(?=[^#'\\\"])[^\\n#]+)))?(?<comment>\\s*#[^\\n]+)?",
+ private static final Pattern LIST_LINE_COMMENT_DETECTOR = Pattern.compile("",
 		Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
  /**
 	* @group 1 = Spacing
@@ -99,7 +99,6 @@ public class FileUtils {
 	StringBuilder configValue = new StringBuilder();
 	Character wrapWith = options.stringWrap().wrapWith();
 	String defaultIndentLength = options.indentString();
-	int listIndent = -1;
 	while(matcher.find()) {
 	 String indent = (matcher.group("indent") == null ? "" : matcher.group("indent")).replace("\n", "");
 	 String confValue = (matcher.group("value") == null ?
@@ -109,42 +108,49 @@ public class FileUtils {
 			.replace("\n" + indent, ""));
 	 String rPath = matcher.group("path");
 	 if(rPath == null) continue;
-	 String currentLine = indent + rPath + ": " + confValue;
-	 currentIndent = (indentString = indent).length();
-	 pathList = createPath(pathList, rPath, currentIndent, lastIndent, indents);
-	 path = String.join(".", pathList).replace("'", "");
-	 StringBuilder originalLine = new StringBuilder(currentLine);
-	 configValue.append(confValue);
-	 append(configuration, comments, inlineComments, wrapWith, path, configValue, indentString, originalLine, indent, rPath, defaultIndentLength, builder);
-	 configValue.setLength(0);
-	 if(comments.containsKey("\0" + path)) {
-		builder.append(comments.get("\0" + path));
-	 }
-	 if(comments.containsKey("\n" + path)) {
-		builder.append("\n" + comments.get("\n" + path));
-	 }
-	 if(comments.containsKey("\1" + path)) {
-		builder.append(comments.get("\1" + path));
-	 }
+	 try {
+		String currentLine = indent + rPath + ": " + confValue;
+		currentIndent = (indentString = indent).length();
+		pathList = createPath(pathList, rPath, currentIndent, lastIndent, indents);
+		path = String.join(".", pathList).replaceFirst("'(.+)'", "$1");
+		StringBuilder originalLine = new StringBuilder(currentLine);
+		configValue.append(confValue);
+		append(configuration, comments, inlineComments, wrapWith, path, configValue, indentString, originalLine, indent, rPath, defaultIndentLength, builder);
+		configValue.setLength(0);
+		if(comments.containsKey("\0" + path)) {
+		 builder.append(comments.get("\0" + path));
+		}
+		if(comments.containsKey("\n" + path)) {
+		 builder.append("\n" + comments.get("\n" + path));
+		}
+		if(comments.containsKey("\1" + path)) {
+		 builder.append(comments.get("\1" + path));
+		}
 	 lastIndent = currentIndent;
+	 }catch(Exception e){
+		e.printStackTrace();
+	 }
 	}
 	return builder.toString();
  }
 
  private static StringBuilder append(IDynamicConfiguration configuration, Map<String, String> comments, Map<String, String> inlineComments, Character wrapWith, String path, StringBuilder configValue, String indentString, StringBuilder originalLine, String indent, String rPath, String defaultIndentLength, StringBuilder builder) {
-	if(wrapWith != null)
+	if(wrapWith != null) {
 	 if(configuration.get(path) instanceof String && configValue.length() > 0) {
 		StringBuilder editedValue = new StringBuilder(configValue);
 		wrapText(wrapWith, indentString, editedValue);
 		originalLine.setLength(0);
 		originalLine.append(indent).append(rPath).append(": ").append(editedValue);
-	 } else if(configuration.getList(path, null) != null && configuration.get(path, null) instanceof List) {
-		Class<?> listType = configuration.getList(path, null).stream().filter(Objects::nonNull).findFirst()
+	 }
+	 else if(configuration.getList(path, configuration.options().defaults() == null ? null : configuration.options().defaults().getList(path, null)) != null
+			&& configuration.get(path, configuration.options().defaults() == null ? null : configuration.options().defaults().get(path, null)) instanceof List) {
+		Class<?> listType = configuration.getList(path, configuration.options().defaults() == null ? null : configuration.options().defaults().getList(path, null)).stream().filter(Objects::nonNull).findFirst()
 			 .map(Object::getClass).orElse(null);
 		if(listType == null) listType = String.class;
-		List<String> listLines = getLines(configValue.toString(), (string) -> string.replaceAll("\\s", "").startsWith("-"), (string) -> !string.replaceAll(
+		List<String> listLines = getLines(configValue.toString(), (string) -> string.replaceAll("\\s+", "").startsWith("-"), (string) -> !string.replaceAll(
 			 "\\s", "").startsWith("#"));
 		configValue.setLength(0);
+		boolean found = false;
 		for(String lineValue : listLines) {
 		 if(lineValue.replaceAll("\\s", "").startsWith("#")) continue;
 		 Matcher match = LIST_LINE_COMMENT_DETECTOR.matcher(lineValue);
@@ -155,6 +161,7 @@ public class FileUtils {
 		 }
 		 if(value.charAt(0) != '-') value.insert(0, "- ");
 		 configValue.append(defaultIndentLength).append(indent).append(value).append("\n");
+		 found = true;
 		}
 		if(configValue.length() - 1 > -1)
 		 configValue.setLength(configValue.length() - 1);
@@ -162,6 +169,11 @@ public class FileUtils {
 		originalLine.append(indent).append(rPath).append(": ").append(configValue.length() == 0 ? "" : "\n").append(configValue);
 		if(listLines.isEmpty() || (listLines.size() == 1 && listLines.get(0).matches("\\s*\\[]")))
 		 originalLine.append("[]");
+		if(configValue.length() == 0 || !found) {
+		 if(listType == String.class) {
+			originalLine.append("- ").append(wrapWith).append(wrapWith);
+		 } else originalLine.append("[]");
+		}
 	 } else if(configuration.get(path, null) instanceof String[]) {
 		String[] str = (String[]) configuration.get(path, null);
 		configValue.setLength(0);
@@ -177,25 +189,29 @@ public class FileUtils {
 		originalLine.setLength(0);
 		originalLine.append(indent).append(rPath).append(": ").append(configValue);
 	 }
+	}
 	String inlineC = inlineComments.getOrDefault(path, "");
 
 	if(!builder.toString().isEmpty())
 	 builder.append("\n");
+	if(comments.containsKey(path) && comments.get(path).length() > 0) {
+	 String[] split = comments.get(path).split("\n");
+	 int stat = builder.length();
+	 for(String comment : split) {
+		builder.append(indentString).append(comment.matches("#.*") ? "" : "# ").append(comment);
+		builder.append("\n");
+	 }
+	}
+
 	if(inlineComments.containsKey(path) && inlineC.length() > 1) {
 	 int in = originalLine.indexOf("\n");
 	 if(in != -1) {
 		String sub = originalLine.substring(0, in);
-		builder.append(sub).append(sub.endsWith(" ") ? "" : " ").append(inlineC.matches("#.*") ? "" : "# ").append(inlineC).append(originalLine.substring(in));
+		builder.append(sub).append(sub.endsWith(" ") ? "" : " ").append(inlineC.matches("#.*") ? "" : "# ")
+			 .append(inlineC).append(originalLine.substring(in));
 	 } else
 		builder.append(originalLine).append(originalLine.lastIndexOf(" ") == originalLine.length() - 1 ? "" : " ").append(inlineC.matches("#.*") ? "" : "# ").append(inlineC);
-
 	 return configValue;
-	} else if(comments.containsKey(path) && comments.get(path).length() > 1) {
-	 String[] split = comments.get(path).split("\n");
-	 for(String comment : split) {
-		builder.append(indentString).append(comment.matches("#.*") ? "" : "# ").append(comment);
-		builder.append(comment.endsWith("\n") ? "" : "\n");
-	 }
 	}
 	builder.append(originalLine);
 	return configValue;
@@ -203,7 +219,7 @@ public class FileUtils {
 
  private static void wrapText(Character wrapWith, String indent, StringBuilder value) {
 	if(wrapWith == null) return;
-	if(value.charAt(0) != wrapWith && StringWrap.isValid(value.charAt(0))) value.replace(0, 1, "");
+	if(value.charAt(0) != wrapWith && StringWrap.isValid(value.charAt(0))) value.replace(0, 1, wrapWith.toString());
 	if(value.charAt(0) != wrapWith) value.insert(0, wrapWith);
 	if(value.charAt(value.length() - 1) != wrapWith && StringWrap.isValid(value.charAt(value.length() - 1)))
 	 value.setLength(value.length() - 1);
@@ -311,10 +327,11 @@ public class FileUtils {
 		pathList = pathList.subList(0, currentIndent / indentSize);
 	 } else if(lastIndent == currentIndent && !pathList.isEmpty()) pathList.remove(pathList.size() - 1);
 	 pathList.add(path);
-	 if(topComment != null && !topComment.isEmpty())
-		top.put(String.join(".", pathList), topComment.replaceAll(indent + "\\s*#\\s*", ""));
+	 if(topComment != null && !topComment.isEmpty()) {
+		top.put(String.join(".", pathList), topComment.replaceAll("[ \\t]*#\\s*", ""));
+	 }
 	 if(inlineComment != null && !inlineComment.isEmpty())
-		inline.put(String.join(".", pathList), inlineComment.replaceAll("\\s*#\\s*", ""));
+		inline.put(String.join(".", pathList), inlineComment.replaceAll("[ \\t]*#\\s*", ""));
 	 lastIndent = currentIndent;
 	 previousKey = String.join(".", pathList);
 	}

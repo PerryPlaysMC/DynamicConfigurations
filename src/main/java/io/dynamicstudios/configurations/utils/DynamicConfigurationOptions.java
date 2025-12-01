@@ -11,6 +11,7 @@ import java.util.UUID;
 /**
  * Creator: PerryPlaysMC
  * Created: 03/2022
+ * @param <T>   The class to configuration class (for the configuration method)
  **/
 public class DynamicConfigurationOptions<T extends IDynamicConfiguration> {
 

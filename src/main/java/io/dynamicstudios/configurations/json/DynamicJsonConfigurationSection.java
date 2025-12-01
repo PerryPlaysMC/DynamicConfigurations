@@ -189,12 +189,16 @@ public class DynamicJsonConfigurationSection extends DefaultDynamicConfiguration
 	if(path.contains(".")) {
 	 String[] split = path.split("\\.");
 	 Map<String, Object> data = new LinkedHashMap<>(this.data);
+	 IDynamicConfigurationSection sec = this;
 	 for(int i = 0; i < split.length; i++) {
-		String key =  split[i];
-		if(!data.containsKey(key)) return i == split.length-1 ? data : defaultValue;
-		Object value = data.getOrDefault(key,defaultValue);
-		if(value instanceof IDynamicConfigurationSection) data = ((IDynamicConfigurationSection)value).data();
-		if(i == split.length-1) return value;
+		String key = split[i];
+//		if(!data.containsKey(key)) return i == split.length - 1 ? sec : defaultValue;
+		Object value = data.getOrDefault(key, defaultValue);
+		if(value instanceof IDynamicConfigurationSection) {
+		 data = ((IDynamicConfigurationSection) value).data();
+		 sec = (IDynamicConfigurationSection) value;
+		}
+		if(i == split.length - 1 || value == null) return value;
 	 }
 	 return data.getOrDefault(split[0], defaultValue);
 	}

@@ -11,619 +11,735 @@ import java.util.Map;
  * Creator: PerryPlaysMC
  * Created: 10/2021
  **/
-
 public interface IDynamicConfigurationSection {
 
+ /**
+	* Gets the unique identifier of this configuration section.
+	*
+	* @return the ID of this section
+	*/
  String id();
 
+ /**
+	* Gets the full path of this configuration section within the configuration hierarchy.
+	*
+	* @return the full path
+	*/
  String fullPath();
 
+ /**
+	* Gets the options associated with this configuration section.
+	*
+	* @return the configuration options
+	*/
  DynamicConfigurationOptions<?> options();
 
+ /**
+	* Gets the parent configuration section, if any.
+	*
+	* @return the parent section, or {@code null} if this is the root
+	*/
  IDynamicConfigurationSection parent();
 
+ /**
+	* Gets the underlying data map for this configuration section.
+	*
+	* @return the data map
+	*/
  Map<String, Object> data();
 
  /**
-	* Save the config
+	* Saves the configuration to its underlying storage.
 	*
-	* @return This
+	* @return this section for chaining
 	*/
  IDynamicConfigurationSection save();
 
  /**
-	* Reload the config
+	* Reloads the configuration from its underlying storage.
 	*
-	* @return This
+	* @return this section for chaining
 	*/
  IDynamicConfigurationSection reload();
 
-
  /**
-	* @return All key values
+	* Gets all keys in this configuration section.
+	*
+	* @param deep whether to include keys from child sections recursively
+	* @return a list of all keys
 	*/
  List<String> getKeys(boolean deep);
 
  /**
-	* Check if the config has a path set
+	* Checks if a path is set in this configuration section.
 	*
-	* @param path
-	* @return Is the path set in the config
+	* @param path the path to check
+	* @return {@code true} if the path is set, {@code false} otherwise
 	*/
  boolean isSet(String path);
 
  /**
-	* Set a value in the config with the provided path, if it's not already set
+	* Sets a value in the configuration at the provided path, but only if the path is not already set.
 	*
-	* @param path  Path to set to the config
-	* @param value Object to be set in the file
-	* @return this
+	* @param path  the path in the configuration
+	* @param value the value to set
+	* @return this section for chaining
 	*/
  default IDynamicConfigurationSection setIfNotSet(String path, Object value) {
-	if(isSet(path))
+	if (isSet(path)) {
 	 return this;
+	}
 	return set(path, value);
  }
 
  /**
-	* Set a value in the config with the provided path with a comment, if it's not already set
+	* Sets a value in the configuration at the provided path with a comment, but only if the path is not already set.
 	*
-	* @param path    Path to set to the config
-	* @param value   Object to be set in the file
-	* @param comment The comment associated with the data
-	* @return this
+	* @param path    the path in the configuration
+	* @param value   the value to set
+	* @param comment the comment associated with the data
+	* @return this section for chaining
 	*/
  default IDynamicConfigurationSection setIfNotSet(String path, Object value, String comment) {
-	if(isSet(path))
+	if (isSet(path)) {
 	 return this;
+	}
 	return set(path, value, comment);
  }
 
  /**
-	* Set a value in the config with the provided path with an inline-comment, if it's not already set
+	* Sets a value in the configuration at the provided path with an inline comment, but only if the path is not already set.
 	*
-	* @param path    Path to set to the config
-	* @param value   Object to be set in the file
-	* @param comment The comment associated with the data
-	* @return this
+	* @param path    the path in the configuration
+	* @param value   the value to set
+	* @param comment the inline comment associated with the data
+	* @return this section for chaining
 	*/
  default IDynamicConfigurationSection setIfNotSetInline(String path, Object value, String comment) {
-	if(isSet(path))
+	if (isSet(path)) {
 	 return this;
+	}
 	return setInline(path, value, comment);
  }
 
  /**
-	* Set a value in the config with the provided path
+	* Sets a value in the configuration at the provided path.
 	*
-	* @param path  Path to set to the config
-	* @param value Object to be set in the file
-	* @return this
+	* @param path  the path in the configuration
+	* @param value the value to set
+	* @return this section for chaining
 	*/
  IDynamicConfigurationSection set(String path, Object value);
 
  /**
-	* Set a value in the config with the provided path with a comment
+	* Sets a value in the configuration at the provided path with a comment.
 	*
-	* @param path    Path to set to the config
-	* @param value   Object to be set in the file
-	* @param comment The comment associated with the data
-	* @return this
+	* @param path    the path in the configuration
+	* @param value   the value to set
+	* @param comment the comment associated with the data
+	* @return this section for chaining
 	*/
  IDynamicConfigurationSection set(String path, Object value, String comment);
 
  /**
-	* Set a value in the config with the provided path with an inline-comment
+	* Sets a value in the configuration at the provided path with an inline comment.
 	*
-	* @param path    Path to set to the config
-	* @param value   Object to be set in the file
-	* @param comment The comment associated with the data
-	* @return this
+	* @param path    the path in the configuration
+	* @param value   the value to set
+	* @param comment the inline comment associated with the data
+	* @return this section for chaining
 	*/
  IDynamicConfigurationSection setInline(String path, Object value, String comment);
 
  /**
-	* Add a comment to the file from the previous key
+	* Adds a comment to the configuration file after the previous key.
 	*
-	* @param comment The comment
-	* @return this
+	* @param comment the lines of comment to add
+	* @return this section for chaining
 	*/
  IDynamicConfigurationSection comment(String... comment);
 
  /**
-	* Add an inline-comment to the file from the previous key
+	* Adds an inline comment to the configuration file after the previous key.
 	*
-	* @param comment The comment
-	* @return this
+	* @param comment the lines of inline comment to add
+	* @return this section for chaining
 	*/
  IDynamicConfigurationSection inlineComment(String... comment);
 
  /**
-	* Get an Object from the config
+	* Gets an object from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The object from the config, null if not set
+	* @param path the path where the object is located
+	* @return the object from the configuration, or the default value if not set
 	*/
  default Object get(String path) {
 	return get(path, options().defaults() == null ? null : options().defaults().get(path));
  }
 
  /**
-	* Get an Object from the config
+	* Gets an object from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The object from the config, defaultValue if not set
+	* @param path         the path where the object is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the object from the configuration, or {@code defaultValue} if not set
 	*/
  Object get(String path, Object defaultValue);
 
  /**
-	* Get an Object from the config
+	* Gets a deserialized object from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The object from the config, null if not set
+	* @param <T>            the type of the object
+	* @param deserializeType the class of the object to deserialize to
+	* @param path           the path where the object is located
+	* @return the deserialized object from the configuration, or the default value if not set
 	*/
  default <T> T get(Class<T> deserializeType, String path) {
 	return get(deserializeType, path, options().defaults() == null ? null : options().defaults().get(deserializeType, path));
  }
 
  /**
-	* Get an Object from the config
+	* Gets a deserialized object from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The object from the config, defaultValue if not set
+	* @param <T>            the type of the object
+	* @param deserializeType the class of the object to deserialize to
+	* @param path           the path where the object is located
+	* @param defaultValue   the default value to return if the path is not set
+	* @return the deserialized object from the configuration, or {@code defaultValue} if not set
 	*/
  <T> T get(Class<T> deserializeType, String path, T defaultValue);
 
  /**
-	* Check if the path is a configuration section
+	* Checks if the path refers to a configuration section.
 	*
-	* @param path The path where to check if it is a configuration section
-	* @return The result
+	* @param path the path to check
+	* @return {@code true} if the path is a configuration section, {@code false} otherwise
 	*/
  default boolean isSection(String path) {
 	return get(path) instanceof IDynamicConfigurationSection;
  }
 
  /**
-	* Get a ConfigurationSection
+	* Gets a child configuration section.
 	*
-	* @param path The path where the configuration section is located
-	* @return The Configuration Section
+	* @param path the path to the child section
+	* @return the child configuration section
 	*/
  IDynamicConfigurationSection getSection(String path);
 
  /**
-	* Create a ConfigurationSection
+	* Creates and gets a child configuration section.
 	*
-	* @param path The path where the configuration section will be located
-	* @return The Configuration Section that was created
+	* @param path the path where the section will be created
+	* @return the created configuration section
 	*/
  IDynamicConfigurationSection createSection(String path);
 
  /**
-	* Create a ConfigurationSection
+	* Creates and gets a child configuration section with a comment.
 	*
-	* @param path The path where the configuration section will be located
-	* @return The Configuration Section that was created
+	* @param path    the path where the section will be created
+	* @param comment the comment for the section
+	* @return the created configuration section
 	*/
  IDynamicConfigurationSection createSection(String path, String comment);
 
  /**
-	* Get a String from the config
+	* Gets a string value from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The String from the config, null if not set
+	* @param path the path where the string is located
+	* @return the string from the configuration, or the default value if not set
 	*/
  default String getString(String path) {
 	return getString(path, options().defaults() == null ? null : options().defaults().getString(path));
  }
 
  /**
-	* Get a String from the config
+	* Gets a string value from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The String from the config, defaultValue if not set
+	* @param path         the path where the string is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the string from the configuration, or {@code defaultValue} if not set
 	*/
  String getString(String path, String defaultValue);
 
  /**
-	* Get a Enum<?> from the config
+	* Gets an enum value from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The Enum<?> from the config, null if not set
+	* @param <T>   the enum type
+	* @param tEnum the class of the enum
+	* @param path  the path where the enum is located
+	* @return the enum value from the configuration, or the default value if not set
 	*/
  default <T extends Enum<?>> T getEnum(Class<T> tEnum, String path) {
 	return getEnum(tEnum, path, options().defaults() == null ? null : options().defaults().getEnum(tEnum, path));
  }
 
  /**
-	* Get a Enum<?> from the config
+	* Gets an enum value from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The Enum<?> from the config, defaultValue if not set
+	* @param <T>          the enum type
+	* @param tEnum        the class of the enum
+	* @param path         the path where the enum is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the enum value from the configuration, or {@code defaultValue} if not set
 	*/
  <T extends Enum<?>> T getEnum(Class<T> tEnum, String path, T defaultValue);
 
  /**
-	* Get a Double from the config
+	* Gets a double value from the configuration.
 	*
-	* @param path The path where the Double is located
-	* @return The String from the config, null if not set
+	* @param path the path where the double is located
+	* @return the double from the configuration, or the default value if not set
 	*/
  default Double getDouble(String path) {
 	return getDouble(path, options().defaults() == null ? null : options().defaults().getDouble(path));
  }
 
  /**
-	* Get a Double from the config
+	* Gets a double value from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The Double from the config, defaultValue if not set
+	* @param path         the path where the double is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the double from the configuration, or {@code defaultValue} if not set
 	*/
  Double getDouble(String path, Double defaultValue);
 
  /**
-	* Get a Integer from the config
+	* Gets an integer value from the configuration.
 	*
-	* @param path The path where the Integer is located
-	* @return The Integer from the config, null if not set
+	* @param path the path where the integer is located
+	* @return the integer from the configuration, or the default value if not set
 	*/
  default Integer getInteger(String path) {
 	return getInteger(path, options().defaults() == null ? null : options().defaults().getInteger(path));
  }
 
  /**
-	* Get a Integer from the config
+	* Gets an integer value from the configuration.
 	*
-	* @param path         The path where the Integer is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The Integer from the config, defaultValue if not set
+	* @param path         the path where the integer is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the integer from the configuration, or {@code defaultValue} if not set
 	*/
  Integer getInteger(String path, Integer defaultValue);
 
-
  /**
-	* Get a Integer from the config
+	* Gets a long value from the configuration.
 	*
-	* @param path The path where the Integer is located
-	* @return The Integer from the config, null if not set
+	* @param path the path where the long is located
+	* @return the long from the configuration, or the default value if not set
 	*/
  default Long getLong(String path) {
 	return getLong(path, options().defaults() == null ? null : options().defaults().getLong(path));
  }
 
  /**
-	* Get a Integer from the config
+	* Gets a long value from the configuration.
 	*
-	* @param path         The path where the Integer is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The Integer from the config, defaultValue if not set
+	* @param path         the path where the long is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the long from the configuration, or {@code defaultValue} if not set
 	*/
  Long getLong(String path, Long defaultValue);
 
-
  /**
-	* Get a Integer from the config
+	* Gets a number value from the configuration.
 	*
-	* @param path The path where the Integer is located
-	* @return The Integer from the config, null if not set
+	* @param path the path where the number is located
+	* @return the number from the configuration, or the default value if not set
 	*/
  default Number getNumber(String path) {
 	return getNumber(path, options().defaults() == null ? null : options().defaults().getNumber(path));
  }
 
  /**
-	* Get a Integer from the config
+	* Gets a number value from the configuration.
 	*
-	* @param path         The path where the Integer is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The Integer from the config, defaultValue if not set
+	* @param path         the path where the number is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the number from the configuration, or {@code defaultValue} if not set
 	*/
  Number getNumber(String path, Number defaultValue);
 
  /**
-	* Get a Float from the config
+	* Gets a float value from the configuration.
 	*
-	* @param path The path where the Float is located
-	* @return The Float from the config, null if not set
+	* @param path the path where the float is located
+	* @return the float from the configuration, or the default value if not set
 	*/
  default Float getFloat(String path) {
 	return getFloat(path, options().defaults() == null ? null : options().defaults().getFloat(path));
  }
 
  /**
-	* Get a Float from the config
+	* Gets a float value from the configuration.
 	*
-	* @param path         The path where the Float is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The Float from the config, defaultValue if not set
+	* @param path         the path where the float is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the float from the configuration, or {@code defaultValue} if not set
 	*/
  Float getFloat(String path, Float defaultValue);
 
  /**
-	* Get a Byte from the config
+	* Gets a byte value from the configuration.
 	*
-	* @param path The path where the Byte is located
-	* @return The Byte from the config, null if not set
+	* @param path the path where the byte is located
+	* @return the byte from the configuration, or the default value if not set
 	*/
  default Byte getByte(String path) {
 	return getByte(path, options().defaults() == null ? null : options().defaults().getByte(path));
  }
 
  /**
-	* Get a Byte from the config
+	* Gets a byte value from the configuration.
 	*
-	* @param path         The path where the Byte is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The Byte from the config, defaultValue if not set
+	* @param path         the path where the byte is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the byte from the configuration, or {@code defaultValue} if not set
 	*/
  Byte getByte(String path, Byte defaultValue);
 
  /**
-	* Get a Boolean from the config
+	* Gets a boolean value from the configuration.
 	*
-	* @param path The path where the Boolean is located
-	* @return The Boolean from the config, null if not set
+	* @param path the path where the boolean is located
+	* @return the boolean from the configuration, or the default value if not set
 	*/
  default Boolean getBoolean(String path) {
 	return getBoolean(path, options().defaults() == null ? null : options().defaults().getBoolean(path));
  }
 
  /**
-	* Get a Boolean from the config
+	* Gets a boolean value from the configuration.
 	*
-	* @param path         The path where the Boolean is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The Boolean from the config, defaultValue if not set
+	* @param path         the path where the boolean is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the boolean from the configuration, or {@code defaultValue} if not set
 	*/
  Boolean getBoolean(String path, Boolean defaultValue);
 
-
  /**
-	* Get a String from the config
+	* Gets a message string from the configuration (aliased to string getter).
 	*
-	* @param path The path where the String is located
-	* @return The String from the config, null if not set
+	* @param path the path where the message is located
+	* @return the message string from the configuration, or the default value if not set
 	*/
  default String getMessage(String path) {
 	return getMessage(path, options().defaults() == null ? null : options().defaults().getMessage(path));
  }
 
  /**
-	* Get a String from the config
+	* Gets a message string from the configuration (aliased to string getter).
 	*
-	* @param path         The path where the String is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The String from the config, defaultValue if not set
+	* @param path         the path where the message is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the message string from the configuration, or {@code defaultValue} if not set
 	*/
  String getMessage(String path, String defaultValue);
 
-
  /**
-	* Get a List<Object> from the config
+	* Gets a list of objects from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The List<Object> from the config, null if not set
+	* @param path the path where the list is located
+	* @return the list from the configuration, or the default value if not set
 	*/
  default List<?> getList(String path) {
 	return getList(path, options().defaults() == null ? null : options().defaults().getList(path));
  }
 
  /**
-	* Get a List<Object> from the config
+	* Gets a list of objects from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The List<Object> from the config, defaultValue if not set
+	* @param path         the path where the list is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the list from the configuration, or {@code defaultValue} if not set
 	*/
  List<?> getList(String path, List<?> defaultValue);
 
-
  /**
-	* Get a List<String> from the config
+	* Gets a list of strings from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The List<String> from the config, null if not set
+	* @param path the path where the list is located
+	* @return the string list from the configuration, or the default value if not set
 	*/
  default List<String> getListString(String path) {
 	return getListString(path, options().defaults() == null ? null : options().defaults().getListString(path));
  }
 
  /**
-	* Get a List<String> from the config
+	* Gets a list of strings from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The List<String> from the config, defaultValue if not set
+	* @param path         the path where the list is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the string list from the configuration, or {@code defaultValue} if not set
 	*/
  List<String> getListString(String path, List<String> defaultValue);
 
-
  /**
-	* Get a List<Double> from the config
+	* Gets a list of doubles from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The List<Double> from the config, null if not set
+	* @param path the path where the list is located
+	* @return the double list from the configuration, or the default value if not set
 	*/
  default List<Double> getListDouble(String path) {
 	return getListDouble(path, options().defaults() == null ? null : options().defaults().getListDouble(path));
  }
 
  /**
-	* Get a List<Double> from the config
+	* Gets a list of doubles from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The List<Double> from the config, defaultValue if not set
+	* @param path         the path where the list is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the double list from the configuration, or {@code defaultValue} if not set
 	*/
  List<Double> getListDouble(String path, List<Double> defaultValue);
 
-
  /**
-	* Get a List<Integer> from the config
+	* Gets a list of integers from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The List<Integer> from the config, null if not set
+	* @param path the path where the list is located
+	* @return the integer list from the configuration, or the default value if not set
 	*/
  default List<Integer> getListInteger(String path) {
 	return getListInteger(path, options().defaults() == null ? null : options().defaults().getListInteger(path));
  }
 
  /**
-	* Get a List<Integer> from the config
+	* Gets a list of integers from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The List<Integer> from the config, defaultValue if not set
+	* @param path         the path where the list is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the integer list from the configuration, or {@code defaultValue} if not set
 	*/
  List<Integer> getListInteger(String path, List<Integer> defaultValue);
 
-
  /**
-	* Get a List<Float> from the config
+	* Gets a list of floats from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The List<Float> from the config, null if not set
+	* @param path the path where the list is located
+	* @return the float list from the configuration, or the default value if not set
 	*/
  default List<Float> getListFloat(String path) {
 	return getListFloat(path, options().defaults() == null ? null : options().defaults().getListFloat(path));
  }
 
  /**
-	* Get a List<Float> from the config
+	* Gets a list of floats from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The List<Float> from the config, defaultValue if not set
+	* @param path         the path where the list is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the float list from the configuration, or {@code defaultValue} if not set
 	*/
  List<Float> getListFloat(String path, List<Float> defaultValue);
 
-
  /**
-	* Get a List<Byte> from the config
+	* Gets a list of bytes from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The List<Byte> from the config, null if not set
+	* @param path the path where the list is located
+	* @return the byte list from the configuration, or the default value if not set
 	*/
  default List<Byte> getListByte(String path) {
 	return getListByte(path, options().defaults() == null ? null : options().defaults().getListByte(path));
  }
 
  /**
-	* Get a List<Byte> from the config
+	* Gets a list of bytes from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The List<Byte> from the config, defaultValue if not set
+	* @param path         the path where the list is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the byte list from the configuration, or {@code defaultValue} if not set
 	*/
  List<Byte> getListByte(String path, List<Byte> defaultValue);
 
-
  /**
-	* Get a List<Boolean> from the config
+	* Gets a list of booleans from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The List<Boolean> from the config, null if not set
+	* @param path the path where the list is located
+	* @return the boolean list from the configuration, or the default value if not set
 	*/
  default List<Boolean> getListBoolean(String path) {
 	return getListBoolean(path, options().defaults() == null ? null : options().defaults().getListBoolean(path));
  }
 
  /**
-	* Get a List<Boolean> from the config
+	* Gets a list of booleans from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The List<Boolean> from the config, defaultValue if not set
+	* @param path         the path where the list is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the boolean list from the configuration, or {@code defaultValue} if not set
 	*/
  List<Boolean> getListBoolean(String path, List<Boolean> defaultValue);
 
  /**
-	* Get a List<Enum<?>> from the config
+	* Gets a list of enum values from the configuration.
 	*
-	* @param path The path where the object is located
-	* @return The List<Enum<?>> from the config, null if not set
+	* @param <T>   the enum type
+	* @param tEnum the class of the enum
+	* @param path  the path where the list is located
+	* @return the enum list from the configuration, or the default value if not set
 	*/
  default <T extends Enum<?>> List<T> getListEnum(Class<T> tEnum, String path) {
 	return getListEnum(tEnum, path, options().defaults() == null ? null : options().defaults().getListEnum(tEnum, path));
  }
 
  /**
-	* Get a List<Enum<?>> from the config
+	* Gets a list of enum values from the configuration.
 	*
-	* @param path         The path where the object is located
-	* @param defaultValue If the path is not set, return defaultValue
-	* @return The List<Enum<?>> from the config, defaultValue if not set
+	* @param <T>          the enum type
+	* @param tEnum        the class of the enum
+	* @param path         the path where the list is located
+	* @param defaultValue the default value to return if the path is not set
+	* @return the enum list from the configuration, or {@code defaultValue} if not set
 	*/
  <T extends Enum<?>> List<T> getListEnum(Class<T> tEnum, String path, List<T> defaultValue);
 
+ /**
+	* Checks if the configuration contains the specified path.
+	*
+	* @param path the path to check
+	* @return {@code true} if the path exists, {@code false} otherwise
+	*/
  boolean contains(String path);
 
+ /**
+	* Checks if the configuration contains the specified path, optionally ignoring defaults.
+	*
+	* @param path          the path to check
+	* @param ignoreDefaults whether to ignore default values when checking
+	* @return {@code true} if the path exists, {@code false} otherwise
+	*/
  boolean contains(String path, boolean ignoreDefaults);
 
+ /**
+	* Checks if the value at the path is an integer.
+	*
+	* @param path the path to check
+	* @return {@code true} if the value is an integer, {@code false} otherwise
+	*/
  boolean isInteger(String path);
 
+ /**
+	* Checks if the value at the path is a double.
+	*
+	* @param path the path to check
+	* @return {@code true} if the value is a double, {@code false} otherwise
+	*/
  boolean isDouble(String path);
 
+ /**
+	* Checks if the value at the path is a boolean.
+	*
+	* @param path the path to check
+	* @return {@code true} if the value is a boolean, {@code false} otherwise
+	*/
  boolean isBoolean(String path);
 
+ /**
+	* Checks if the value at the path is a long.
+	*
+	* @param path the path to check
+	* @return {@code true} if the value is a long, {@code false} otherwise
+	*/
  boolean isLong(String path);
 
+ /**
+	* Checks if the value at the path is a short.
+	*
+	* @param path the path to check
+	* @return {@code true} if the value is a short, {@code false} otherwise
+	*/
  boolean isShort(String path);
 
+ /**
+	* Checks if the value at the path is a byte.
+	*
+	* @param path the path to check
+	* @return {@code true} if the value is a byte, {@code false} otherwise
+	*/
  boolean isByte(String path);
 
+ /**
+	* Checks if the value at the path is a string.
+	*
+	* @param path the path to check
+	* @return {@code true} if the value is a string, {@code false} otherwise
+	*/
  boolean isString(String path);
 
+ /**
+	* Converts this configuration section to a human-readable string representation.
+	*
+	* @return a string representation of the section
+	*/
  default String asString() {
 	List<String> lines = new ArrayList<>();
 	lines.add((id().isEmpty() ? "" : id() + ": ") + "{");
-	for(Map.Entry<String, Object> key_val : data().entrySet()) {
+	for (Map.Entry<String, Object> key_val : data().entrySet()) {
 	 String key = key_val.getKey();
 	 Object val = key_val.getValue();
-	 if(lines.size() > 2)
+	 if (lines.size() > 2) {
 		lines.set(lines.size() - 1, lines.get(lines.size() - 1) + ",");
+	 }
 	 String text = indent(1) + key + ": ";
-	 if(val instanceof Map) text += fromMap(2, (Map<?, ?>) val);
-	 else if(val instanceof IDynamicConfigurationSection) text += fromMap(2, ((IDynamicConfigurationSection) val).data());
-	 else if(val instanceof Object[]) text += Arrays.toString((Object[]) val);
-	 else text += val;
+	 if (val instanceof Map) {
+		text += fromMap(2, (Map<?, ?>) val);
+	 } else if (val instanceof IDynamicConfigurationSection) {
+		text += fromMap(2, ((IDynamicConfigurationSection) val).data());
+	 } else if (val instanceof Object[]) {
+		text += Arrays.toString((Object[]) val);
+	 } else {
+		text += val;
+	 }
 	 lines.add(text);
 	}
 	lines.add("}");
 	return String.join("\n", lines);
  }
 
+ /**
+	* Converts a map to a human-readable string representation with indentation.
+	*
+	* @param indent  the indentation level
+	* @param objects the map to convert
+	* @return a string representation of the map
+	*/
  default String fromMap(int indent, Map<?, ?> objects) {
 	List<String> lines = new ArrayList<>();
 	lines.add("{");
-	for(Map.Entry<?, ?> key_val : objects.entrySet()) {
+	for (Map.Entry<?, ?> key_val : objects.entrySet()) {
 	 Object key = key_val.getKey();
 	 Object val = key_val.getValue();
-	 if(lines.size() > 2)
+	 if (lines.size() > 2) {
 		lines.set(lines.size() - 1, lines.get(lines.size() - 1) + ",");
+	 }
 	 String text = indent(indent) + key + ": ";
-	 if(val instanceof Map) text += fromMap(indent + 1, (Map<?, ?>) val);
-	 else if(val instanceof IDynamicConfigurationSection)
+	 if (val instanceof Map) {
+		text += fromMap(indent + 1, (Map<?, ?>) val);
+	 } else if (val instanceof IDynamicConfigurationSection) {
 		text += fromMap(indent + 1, ((IDynamicConfigurationSection) val).data());
-	 else if(val instanceof Object[]) text += Arrays.toString((Object[]) val);
-	 else text += val;
+	 } else if (val instanceof Object[]) {
+		text += Arrays.toString((Object[]) val);
+	 } else {
+		text += val;
+	 }
 	 lines.add(String.join("\n" + indent(indent), text.split("\n")));
 	}
 	lines.add(indent(indent - 1) + "}");
 	return String.join("\n", lines);
  }
 
+ /**
+	* Generates an indentation string with the specified number of spaces.
+	*
+	* @param indents the number of indent levels
+	* @return the indentation string
+	*/
  default String indent(int indents) {
 	StringBuilder res = new StringBuilder();
-	for(int i = 0; i < indents; i++) res.append(" ");
+	for (int i = 0; i < indents; i++) {
+	 res.append(" ");
+	}
 	return res.toString();
  }
-
-
 }
